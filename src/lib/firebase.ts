@@ -5,12 +5,13 @@ import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyBTaeqbH5XgjwuXM-s6tyzdhfqJ1tdLRRs",
+  authDomain: "planeja-ec7ed.firebaseapp.com",
+  projectId: "planeja-ec7ed",
+  storageBucket: "planeja-ec7ed.firebasestorage.app",
+  messagingSenderId: "902412192203",
+  appId: "1:902412192203:web:c6150b7db13b3817198e4e",
+  measurementId: "G-KR2CE1Z7XY"
 };
 
 // Initialize Firebase
