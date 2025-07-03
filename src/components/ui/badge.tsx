@@ -15,6 +15,15 @@ const badgeVariants = cva(
         destructive:
           "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
         outline: "text-foreground",
+        stamp: "border-transparent bg-stamp text-stamp-foreground hover:bg-stamp/80",
+        product: "border-transparent bg-product text-product-foreground hover:bg-product/80",
+        employee: "border-transparent bg-employee text-employee-foreground hover:bg-employee/80",
+        failure: "border-transparent bg-failure text-failure-foreground hover:bg-failure/80",
+        estampa: "border-transparent bg-estampa text-estampa-foreground hover:bg-estampa/80",
+        costura: "border-transparent bg-costura text-costura-foreground hover:bg-costura/80",
+        corte: "border-transparent bg-corte text-corte-foreground hover:bg-corte/80",
+        acabamento: "border-transparent bg-acabamento text-acabamento-foreground hover:bg-acabamento/80",
+        qualidade: "border-transparent bg-qualidade text-qualidade-foreground hover:bg-qualidade/80",
       },
     },
     defaultVariants: {

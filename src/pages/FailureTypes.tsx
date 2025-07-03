@@ -119,15 +119,15 @@ export default function FailureTypes() {
     return categories.find(cat => cat.value === categoryValue)?.label || categoryValue;
   };
 
-  const getCategoryColor = (category: string) => {
-    const colors: Record<string, string> = {
-      estampa: "bg-blue-100 text-blue-800",
-      costura: "bg-green-100 text-green-800",
-      corte: "bg-orange-100 text-orange-800",
-      acabamento: "bg-purple-100 text-purple-800",
-      qualidade: "bg-red-100 text-red-800",
+  const getCategoryVariant = (category: string): "estampa" | "costura" | "corte" | "acabamento" | "qualidade" | "secondary" => {
+    const variants: Record<string, "estampa" | "costura" | "corte" | "acabamento" | "qualidade"> = {
+      estampa: "estampa",
+      costura: "costura", 
+      corte: "corte",
+      acabamento: "acabamento",
+      qualidade: "qualidade",
     };
-    return colors[category] || "bg-gray-100 text-gray-800";
+    return variants[category] || "secondary";
   };
 
   if (loading) {
@@ -221,8 +221,8 @@ export default function FailureTypes() {
 
       <Card>
         <CardHeader className="flex flex-row items-center gap-4">
-          <div className="p-2 bg-orange-50 rounded-lg">
-            <AlertTriangle className="h-6 w-6 text-orange-600" />
+          <div className="p-2 bg-failure rounded-lg">
+            <AlertTriangle className="h-6 w-6 text-failure-foreground" />
           </div>
           <div>
             <CardTitle>Tipos de Falha Cadastrados</CardTitle>
@@ -252,7 +252,7 @@ export default function FailureTypes() {
                   <TableRow key={failureType.id}>
                     <TableCell className="font-medium">{failureType.name}</TableCell>
                     <TableCell>
-                      <Badge className={getCategoryColor(failureType.category)}>
+                      <Badge variant={getCategoryVariant(failureType.category)}>
                         {getCategoryLabel(failureType.category)}
                       </Badge>
                     </TableCell>

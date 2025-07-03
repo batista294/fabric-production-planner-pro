@@ -288,8 +288,8 @@ export default function Products() {
 
       <Card>
         <CardHeader className="flex flex-row items-center gap-4">
-          <div className="p-2 bg-green-50 rounded-lg">
-            <Package className="h-6 w-6 text-green-600" />
+          <div className="p-2 bg-product rounded-lg">
+            <Package className="h-6 w-6 text-product-foreground" />
           </div>
           <div>
             <CardTitle>Produtos Cadastrados</CardTitle>
@@ -322,10 +322,10 @@ export default function Products() {
                   <TableRow key={product.id}>
                     <TableCell>
                       {product.imageUrl ? (
-                        <img src={product.imageUrl} alt={product.name} className="w-12 h-12 object-cover rounded" />
+                        <img src={product.imageUrl} alt={product.name} className="w-12 h-12 object-cover rounded-lg shadow-sm" />
                       ) : (
-                        <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center">
-                          <Package className="h-6 w-6 text-gray-400" />
+                        <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center">
+                          <Package className="h-6 w-6 text-muted-foreground" />
                         </div>
                       )}
                     </TableCell>
@@ -333,7 +333,7 @@ export default function Products() {
                     <TableCell>{product.description}</TableCell>
                     <TableCell>R$ {product.price.toFixed(2)}</TableCell>
                     <TableCell>
-                      <Badge variant="secondary">{product.stampTypeName}</Badge>
+                      <Badge variant="stamp">{product.stampTypeName}</Badge>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex gap-2 justify-end">

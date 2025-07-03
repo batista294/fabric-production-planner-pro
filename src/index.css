@@ -37,6 +37,32 @@
 
     --radius: 0.5rem;
 
+    /* Category Colors */
+    --stamp-bg: 263 85% 96%;
+    --stamp-fg: 263 85% 47%;
+    --product-bg: 142 71% 45%;
+    --product-fg: 0 0% 100%;
+    --employee-bg: 210 100% 96%;
+    --employee-fg: 210 100% 47%;
+    --failure-bg: 0 84% 96%;
+    --failure-fg: 0 84% 47%;
+    --warning-bg: 38 92% 50%;
+    --warning-fg: 0 0% 100%;
+    --success-bg: 142 71% 45%;
+    --success-fg: 0 0% 100%;
+
+    /* Category Specific Colors */
+    --estampa-bg: 210 100% 95%;
+    --estampa-fg: 210 100% 45%;
+    --costura-bg: 142 100% 95%;
+    --costura-fg: 142 100% 45%;
+    --corte-bg: 38 100% 95%;
+    --corte-fg: 38 100% 45%;
+    --acabamento-bg: 263 100% 95%;
+    --acabamento-fg: 263 100% 45%;
+    --qualidade-bg: 0 100% 95%;
+    --qualidade-fg: 0 100% 45%;
+
     --sidebar-background: 222 47% 11%;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 210 100% 50%;

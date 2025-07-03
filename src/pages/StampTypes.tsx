@@ -191,8 +191,8 @@ export default function StampTypes() {
 
       <Card>
         <CardHeader className="flex flex-row items-center gap-4">
-          <div className="p-2 bg-purple-50 rounded-lg">
-            <Palette className="h-6 w-6 text-purple-600" />
+          <div className="p-2 bg-stamp rounded-lg">
+            <Palette className="h-6 w-6 text-stamp-foreground" />
           </div>
           <div>
             <CardTitle>Tipos de Estampa Cadastrados</CardTitle>

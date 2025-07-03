@@ -223,8 +223,8 @@ export default function Employees() {
 
       <Card>
         <CardHeader className="flex flex-row items-center gap-4">
-          <div className="p-2 bg-blue-50 rounded-lg">
-            <Users className="h-6 w-6 text-blue-600" />
+          <div className="p-2 bg-employee rounded-lg">
+            <Users className="h-6 w-6 text-employee-foreground" />
           </div>
           <div>
             <CardTitle>Lista de Funcionários</CardTitle>
@@ -256,7 +256,7 @@ export default function Employees() {
                   <TableRow key={employee.id}>
                     <TableCell className="font-medium">{employee.name}</TableCell>
                     <TableCell>
-                      <Badge variant="secondary">{employee.role}</Badge>
+                      <Badge variant="employee">{employee.role}</Badge>
                     </TableCell>
                     <TableCell>{employee.email}</TableCell>
                     <TableCell>{employee.phone}</TableCell>

@@ -52,6 +52,50 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
+				stamp: {
+					DEFAULT: 'hsl(var(--stamp-bg))',
+					foreground: 'hsl(var(--stamp-fg))'
+				},
+				product: {
+					DEFAULT: 'hsl(var(--product-bg))',
+					foreground: 'hsl(var(--product-fg))'
+				},
+				employee: {
+					DEFAULT: 'hsl(var(--employee-bg))',
+					foreground: 'hsl(var(--employee-fg))'
+				},
+				failure: {
+					DEFAULT: 'hsl(var(--failure-bg))',
+					foreground: 'hsl(var(--failure-fg))'
+				},
+				warning: {
+					DEFAULT: 'hsl(var(--warning-bg))',
+					foreground: 'hsl(var(--warning-fg))'
+				},
+				success: {
+					DEFAULT: 'hsl(var(--success-bg))',
+					foreground: 'hsl(var(--success-fg))'
+				},
+				estampa: {
+					DEFAULT: 'hsl(var(--estampa-bg))',
+					foreground: 'hsl(var(--estampa-fg))'
+				},
+				costura: {
+					DEFAULT: 'hsl(var(--costura-bg))',
+					foreground: 'hsl(var(--costura-fg))'
+				},
+				corte: {
+					DEFAULT: 'hsl(var(--corte-bg))',
+					foreground: 'hsl(var(--corte-fg))'
+				},
+				acabamento: {
+					DEFAULT: 'hsl(var(--acabamento-bg))',
+					foreground: 'hsl(var(--acabamento-fg))'
+				},
+				qualidade: {
+					DEFAULT: 'hsl(var(--qualidade-bg))',
+					foreground: 'hsl(var(--qualidade-fg))'
+				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',
