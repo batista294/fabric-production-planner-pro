@@ -40,15 +40,18 @@ export default function FailureTypes() {
 
   const fetchFailureTypes = async () => {
     try {
+      console.log("Iniciando busca de tipos de falha...");
       const querySnapshot = await getDocs(collection(db, 'failure_types'));
+      console.log("Documentos encontrados:", querySnapshot.docs.length);
       const failureTypesData = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as FailureType[];
+      console.log("Dados processados:", failureTypesData);
       setFailureTypes(failureTypesData);
     } catch (error) {
       console.error("Error fetching failure types:", error);
-      toast.error("Erro ao carregar tipos de falha");
+      toast.error("Erro ao carregar tipos de falha: " + (error as Error).message);
     } finally {
       setLoading(false);
     }
@@ -70,12 +73,16 @@ export default function FailureTypes() {
 
     try {
       const failureTypeData = { name, category };
+      console.log("Tentando salvar:", failureTypeData);
 
       if (editingFailureType) {
+        console.log("Atualizando documento:", editingFailureType.id);
         await updateDoc(doc(db, 'failure_types', editingFailureType.id), failureTypeData);
         toast.success("Tipo de falha atualizado com sucesso!");
       } else {
-        await addDoc(collection(db, 'failure_types'), failureTypeData);
+        console.log("Criando novo documento...");
+        const docRef = await addDoc(collection(db, 'failure_types'), failureTypeData);
+        console.log("Documento criado com ID:", docRef.id);
         toast.success("Tipo de falha cadastrado com sucesso!");
       }
 
@@ -84,7 +91,7 @@ export default function FailureTypes() {
       fetchFailureTypes();
     } catch (error) {
       console.error("Error saving failure type:", error);
-      toast.error("Erro ao salvar tipo de falha");
+      toast.error("Erro ao salvar tipo de falha: " + (error as Error).message);
     } finally {
       setSubmitting(false);
     }
