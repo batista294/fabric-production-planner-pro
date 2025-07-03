@@ -5,13 +5,13 @@ import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBTaeqbH5XgjwuXM-s6tyzdhfqJ1tdLRRs",
-  authDomain: "planeja-ec7ed.firebaseapp.com",
-  projectId: "planeja-ec7ed",
-  storageBucket: "planeja-ec7ed.firebasestorage.app",
-  messagingSenderId: "902412192203",
-  appId: "1:902412192203:web:c6150b7db13b3817198e4e",
-  measurementId: "G-KR2CE1Z7XY"
+  apiKey: "AIzaSyC7KJHR8vd9t_7wFkua1MydvWBqFhYP6_U",
+  authDomain: "controle-de-producao-7575f.firebaseapp.com",
+  projectId: "controle-de-producao-7575f",
+  storageBucket: "controle-de-producao-7575f.firebasestorage.app",
+  messagingSenderId: "490088477536",
+  appId: "1:490088477536:web:d0f759ba173f7efb7de405",
+  measurementId: "G-P8TM2Y4RL7"
 };
 
 // Initialize Firebase
