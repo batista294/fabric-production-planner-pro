@@ -7,8 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ClipboardList, Plus } from "lucide-react";
+import { ClipboardList, Plus, LayoutGrid } from "lucide-react";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 interface ProductionOrder {
   id: string;
@@ -42,6 +43,7 @@ interface RawMaterial {
 }
 
 export default function ProductionOrders() {
+  const navigate = useNavigate();
   const [productionOrders, setProductionOrders] = useState<ProductionOrder[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [rawMaterials, setRawMaterials] = useState<RawMaterial[]>([]);
@@ -225,6 +227,17 @@ export default function ProductionOrders() {
           <p className="text-muted-foreground">
             Gerencie as ordens de produção da confecção
           </p>
+        </div>
+        
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => navigate('/painel-producao')}
+            className="gap-2"
+          >
+            <LayoutGrid className="h-4 w-4" />
+            Ver Kanban
+          </Button>
         </div>
       </div>
 

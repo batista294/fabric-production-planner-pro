@@ -19,6 +19,7 @@ import FailureEntries from "./pages/FailureEntries";
 import Sales from "./pages/Sales";
 import ShippingEntries from "./pages/ShippingEntries";
 import ProductionOrders from "./pages/ProductionOrders";
+import ProductionKanban from "./pages/ProductionKanban";
 import Productivity from "./pages/Productivity";
 import Config from "./pages/Config";
 import NotFound from "./pages/NotFound";
@@ -49,6 +50,7 @@ const App = () => (
               <Route path="falhas" element={<FailureEntries />} />
               <Route path="vendas" element={<Sales />} />
               <Route path="entregas" element={<ShippingEntries />} />
+              <Route path="painel-producao" element={<ProductionKanban />} />
               <Route path="ordens-producao" element={<ProductionOrders />} />
               <Route path="produtividade" element={<Productivity />} />
               <Route path="configuracoes" element={<Config />} />
