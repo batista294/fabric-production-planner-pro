@@ -10,6 +10,7 @@ import { AppLayout } from "@/components/AppLayout";
 import Index from "./pages/Index";
 import Employees from "./pages/Employees";
 import Products from "./pages/Products";
+import RawMaterials from "./pages/RawMaterials";
 import StampTypes from "./pages/StampTypes";
 import FailureTypes from "./pages/FailureTypes";
 import PrintEntries from "./pages/PrintEntries";
@@ -40,6 +41,7 @@ const App = () => (
               <Route index element={<Index />} />
               <Route path="funcionarios" element={<Employees />} />
               <Route path="produtos" element={<Products />} />
+              <Route path="materias-primas" element={<RawMaterials />} />
               <Route path="tipos-estampa" element={<StampTypes />} />
               <Route path="tipos-falha" element={<FailureTypes />} />
               <Route path="impressoes" element={<PrintEntries />} />

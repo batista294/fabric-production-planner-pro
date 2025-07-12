@@ -22,6 +22,13 @@ interface Product {
   stampTypeId: string;
   stampTypeName: string;
   imageUrl?: string;
+  requiredMaterials?: RequiredMaterial[];
+}
+
+interface RequiredMaterial {
+  materialId: string;
+  materialName: string;
+  quantityPerUnit: number;
 }
 
 interface StampType {
@@ -30,9 +37,16 @@ interface StampType {
   description: string;
 }
 
+interface RawMaterial {
+  id: string;
+  name: string;
+  unit: string;
+}
+
 export default function Products() {
   const [products, setProducts] = useState<Product[]>([]);
   const [stampTypes, setStampTypes] = useState<StampType[]>([]);
+  const [rawMaterials, setRawMaterials] = useState<RawMaterial[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -42,6 +56,7 @@ export default function Products() {
   const [price, setPrice] = useState("");
   const [stampTypeId, setStampTypeId] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [requiredMaterials, setRequiredMaterials] = useState<RequiredMaterial[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
   const fetchProducts = async () => {
@@ -72,10 +87,24 @@ export default function Products() {
     }
   };
 
+  const fetchRawMaterials = async () => {
+    try {
+      const querySnapshot = await getDocs(collection(db, 'raw_materials'));
+      const rawMaterialsData = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as RawMaterial[];
+      setRawMaterials(rawMaterialsData);
+    } catch (error) {
+      console.error("Error fetching raw materials:", error);
+      toast.error("Erro ao carregar matérias-primas");
+    }
+  };
+
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
-      await Promise.all([fetchProducts(), fetchStampTypes()]);
+      await Promise.all([fetchProducts(), fetchStampTypes(), fetchRawMaterials()]);
       setLoading(false);
     };
     loadData();
@@ -87,6 +116,7 @@ export default function Products() {
     setPrice("");
     setStampTypeId("");
     setImageFile(null);
+    setRequiredMaterials([]);
     setEditingProduct(null);
   };
 
@@ -114,6 +144,7 @@ export default function Products() {
         price: parseFloat(price),
         stampTypeId,
         stampTypeName: selectedStampType?.name || "",
+        requiredMaterials,
         ...(imageUrl && { imageUrl })
       };
 
@@ -142,7 +173,31 @@ export default function Products() {
     setDescription(product.description);
     setPrice(product.price.toString());
     setStampTypeId(product.stampTypeId);
+    setRequiredMaterials(product.requiredMaterials || []);
     setDialogOpen(true);
+  };
+
+  const addRequiredMaterial = () => {
+    setRequiredMaterials([...requiredMaterials, { materialId: "", materialName: "", quantityPerUnit: 0 }]);
+  };
+
+  const removeRequiredMaterial = (index: number) => {
+    setRequiredMaterials(requiredMaterials.filter((_, i) => i !== index));
+  };
+
+  const updateRequiredMaterial = (index: number, field: keyof RequiredMaterial, value: string | number) => {
+    const updated = [...requiredMaterials];
+    if (field === 'materialId') {
+      const selectedMaterial = rawMaterials.find(m => m.id === value);
+      updated[index] = {
+        ...updated[index],
+        materialId: value as string,
+        materialName: selectedMaterial?.name || ""
+      };
+    } else {
+      updated[index] = { ...updated[index], [field]: value };
+    }
+    setRequiredMaterials(updated);
   };
 
   const handleDelete = async (id: string) => {
@@ -268,6 +323,49 @@ export default function Products() {
                   accept="image/*"
                   onChange={(e) => setImageFile(e.target.files?.[0] || null)}
                 />
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>Materiais Necessários</Label>
+                  <Button type="button" variant="outline" size="sm" onClick={addRequiredMaterial}>
+                    <Plus className="h-4 w-4 mr-1" />
+                    Adicionar
+                  </Button>
+                </div>
+                {requiredMaterials.map((material, index) => (
+                  <div key={index} className="flex gap-2 items-end">
+                    <div className="flex-1">
+                      <Select 
+                        value={material.materialId} 
+                        onValueChange={(value) => updateRequiredMaterial(index, 'materialId', value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione matéria-prima" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {rawMaterials.map((rawMaterial) => (
+                            <SelectItem key={rawMaterial.id} value={rawMaterial.id}>
+                              {rawMaterial.name} ({rawMaterial.unit})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="w-24">
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="Qtd"
+                        value={material.quantityPerUnit}
+                        onChange={(e) => updateRequiredMaterial(index, 'quantityPerUnit', parseFloat(e.target.value) || 0)}
+                      />
+                    </div>
+                    <Button type="button" variant="outline" size="sm" onClick={() => removeRequiredMaterial(index)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
               </div>
 
               <div className="flex gap-2 pt-4">

@@ -8,7 +8,9 @@ import {
   Printer, 
   Scissors, 
   Bug,
-  Palette
+  Palette,
+  Layers,
+  ClipboardList
 } from "lucide-react";
 import {
   Sidebar,
@@ -26,11 +28,13 @@ const navigationItems = [
   { title: "Dashboard", url: "/", icon: Home },
   { title: "Funcionários", url: "/funcionarios", icon: Users },
   { title: "Produtos", url: "/produtos", icon: Package },
+  { title: "Matéria-Prima", url: "/materias-primas", icon: Layers },
   { title: "Tipos de Estampa", url: "/tipos-estampa", icon: Palette },
   { title: "Tipos de Falha", url: "/tipos-falha", icon: AlertTriangle },
 ];
 
 const productionItems = [
+  { title: "Ordens de Produção", url: "/ordens-producao", icon: ClipboardList },
   { title: "Impressões", url: "/impressoes", icon: Printer },
   { title: "Costuras", url: "/costuras", icon: Scissors },
   { title: "Falhas", url: "/falhas", icon: Bug },

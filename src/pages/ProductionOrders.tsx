@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { collection, addDoc, getDocs } from "firebase/firestore";
+import { collection, addDoc, getDocs, doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,11 +26,25 @@ interface ProductionOrder {
 interface Product {
   id: string;
   name: string;
+  requiredMaterials?: RequiredMaterial[];
+}
+
+interface RequiredMaterial {
+  materialId: string;
+  materialName: string;
+  quantityPerUnit: number;
+}
+
+interface RawMaterial {
+  id: string;
+  name: string;
+  stockQuantity: number;
 }
 
 export default function ProductionOrders() {
   const [productionOrders, setProductionOrders] = useState<ProductionOrder[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [rawMaterials, setRawMaterials] = useState<RawMaterial[]>([]);
   const [loading, setLoading] = useState(true);
   
   const [orderId, setOrderId] = useState("");
@@ -44,9 +58,10 @@ export default function ProductionOrders() {
 
   const fetchData = async () => {
     try {
-      const [ordersSnapshot, productsSnapshot] = await Promise.all([
+      const [ordersSnapshot, productsSnapshot, materialsSnapshot] = await Promise.all([
         getDocs(collection(db, 'production_orders')),
-        getDocs(collection(db, 'products'))
+        getDocs(collection(db, 'products')),
+        getDocs(collection(db, 'raw_materials'))
       ]);
 
       const ordersData = ordersSnapshot.docs.map(doc => ({
@@ -59,8 +74,14 @@ export default function ProductionOrders() {
         ...doc.data()
       })) as Product[];
 
+      const materialsData = materialsSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as RawMaterial[];
+
       setProductionOrders(ordersData);
       setProducts(productsData);
+      setRawMaterials(materialsData);
     } catch (error) {
       console.error("Error fetching data:", error);
       toast.error("Erro ao carregar dados");
@@ -81,6 +102,72 @@ export default function ProductionOrders() {
     setStatus("pendente");
     setDueDate("");
     setNotes("");
+  };
+
+  const checkStockAvailability = (product: Product, orderQuantity: number): boolean => {
+    if (!product.requiredMaterials) return true;
+    
+    for (const requiredMaterial of product.requiredMaterials) {
+      const rawMaterial = rawMaterials.find(rm => rm.id === requiredMaterial.materialId);
+      if (!rawMaterial) continue;
+      
+      const totalNeeded = requiredMaterial.quantityPerUnit * orderQuantity;
+      if (rawMaterial.stockQuantity < totalNeeded) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  const updateMaterialStock = async (product: Product, orderQuantity: number) => {
+    if (!product.requiredMaterials) return;
+    
+    for (const requiredMaterial of product.requiredMaterials) {
+      const rawMaterial = rawMaterials.find(rm => rm.id === requiredMaterial.materialId);
+      if (!rawMaterial) continue;
+      
+      const totalUsed = requiredMaterial.quantityPerUnit * orderQuantity;
+      const newStock = rawMaterial.stockQuantity - totalUsed;
+      
+      await updateDoc(doc(db, 'raw_materials', rawMaterial.id), {
+        stockQuantity: Math.max(0, newStock)
+      });
+    }
+  };
+
+  const handleStatusChange = async (order: ProductionOrder) => {
+    try {
+      let newStatus = order.status;
+      
+      if (order.status === 'pendente') {
+        // Verificar estoque antes de iniciar produção
+        const product = products.find(p => p.id === order.productId);
+        if (product && !checkStockAvailability(product, order.quantity)) {
+          toast.error("Estoque de matéria-prima insuficiente para iniciar a produção.");
+          return;
+        }
+        
+        // Baixar estoque
+        if (product) {
+          await updateMaterialStock(product, order.quantity);
+        }
+        
+        newStatus = 'em_producao';
+        toast.success("Produção iniciada! Estoque de matéria-prima atualizado.");
+      } else if (order.status === 'em_producao') {
+        newStatus = 'concluida';
+        toast.success("Ordem de produção finalizada!");
+      }
+      
+      await updateDoc(doc(db, 'production_orders', order.id), {
+        status: newStatus
+      });
+      
+      fetchData();
+    } catch (error) {
+      console.error("Error updating order status:", error);
+      toast.error("Erro ao atualizar status da ordem");
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -288,6 +375,16 @@ export default function ProductionOrders() {
                     </div>
                     <div className="flex justify-between items-center">
                       <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleStatusChange(order)}
+                          disabled={order.status === 'concluida' || order.status === 'cancelada'}
+                          className="text-xs"
+                        >
+                          {order.status === 'pendente' ? 'Iniciar Produção' : 
+                           order.status === 'em_producao' ? 'Finalizar' : 'Concluída'}
+                        </Button>
                         <span className={`text-xs px-2 py-1 rounded-full ${
                           order.status === 'concluida' ? 'bg-green-100 text-green-800' :
                           order.status === 'em_producao' ? 'bg-blue-100 text-blue-800' :
