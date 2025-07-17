@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Package2 } from "lucide-react";
+import { Calendar, Package2, User, CalendarClock } from "lucide-react";
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
@@ -15,6 +15,9 @@ interface ProductionOrder {
   dueDate: string;
   date: string;
   notes?: string;
+  client?: string;
+  productionStage?: string;
+  customerFeedback?: string;
 }
 
 interface OrderCardProps {
@@ -48,6 +51,34 @@ export function OrderCard({ order }: OrderCardProps) {
         return 'bg-blue-100 text-blue-800 border-blue-200';
     }
   };
+  
+  const getStageColor = (stage?: string) => {
+    switch (stage) {
+      case 'Arte Montada':
+        return 'bg-blue-50 text-blue-600 border-blue-100';
+      case 'Impresso':
+        return 'bg-blue-200 text-blue-800 border-blue-300';
+      case 'Estampado':
+        return 'bg-yellow-50 text-yellow-600 border-yellow-100';
+      case 'Houve Falhas':
+        return 'bg-orange-100 text-orange-700 border-orange-200';
+      case 'Finalizado / Entregue':
+        return 'bg-green-50 text-green-600 border-green-100';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+  
+  const getFeedbackColor = (feedback?: string) => {
+    switch (feedback) {
+      case 'Elogiado pelo Cliente':
+        return 'bg-green-300 text-green-800 border-green-400';
+      case 'Reclamação / Problema':
+        return 'bg-yellow-300 text-yellow-800 border-yellow-400';
+      default:
+        return '';
+    }
+  };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -69,6 +100,12 @@ export function OrderCard({ order }: OrderCardProps) {
           <div>
             <h4 className="font-semibold text-sm">{order.orderId}</h4>
             <p className="text-xs text-muted-foreground">{order.productName}</p>
+            {order.client && (
+              <div className="flex items-center gap-1 mt-1">
+                <User className="h-3 w-3 text-muted-foreground" />
+                <p className="text-xs text-muted-foreground">✅ Cliente {order.client}</p>
+              </div>
+            )}
           </div>
           <Badge 
             variant="outline" 
@@ -81,17 +118,40 @@ export function OrderCard({ order }: OrderCardProps) {
         <div className="flex items-center gap-4 text-xs text-muted-foreground">
           <div className="flex items-center gap-1">
             <Package2 className="h-3 w-3" />
-            <span>{order.quantity} un.</span>
+            <span>🔢 {order.quantity} un.</span>
           </div>
           <div className="flex items-center gap-1">
             <Calendar className="h-3 w-3" />
-            <span>{formatDate(order.dueDate)}</span>
+            <span>📦 {formatDate(order.dueDate)}</span>
           </div>
         </div>
+
+        {order.date && (
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <CalendarClock className="h-3 w-3" />
+            <span>📅 Inclusão: {formatDate(order.date)}</span>
+          </div>
+        )}
+        
+        {order.productionStage && (
+          <div className="mt-1">
+            <Badge variant="outline" className={`text-xs w-full justify-center ${getStageColor(order.productionStage)}`}>
+              🔄 {order.productionStage}
+            </Badge>
+          </div>
+        )}
+
+        {order.customerFeedback && (
+          <div className="mt-1">
+            <Badge variant="outline" className={`text-xs w-full justify-center ${getFeedbackColor(order.customerFeedback)}`}>
+              💬 {order.customerFeedback}
+            </Badge>
+          </div>
+        )}
         
         {order.notes && (
           <p className="text-xs text-muted-foreground truncate" title={order.notes}>
-            {order.notes}
+            📝 {order.notes}
           </p>
         )}
       </CardContent>
