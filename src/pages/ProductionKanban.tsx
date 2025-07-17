@@ -44,8 +44,11 @@ interface ProductionOrder {
 const statusColumns = [
   { id: 'pendente', title: 'Pendente', color: 'bg-yellow-50 border-yellow-200' },
   { id: 'em_producao', title: 'Em Produção', color: 'bg-blue-50 border-blue-200' },
-  { id: 'concluida', title: 'Concluída', color: 'bg-green-50 border-green-200' },
-  { id: 'cancelada', title: 'Cancelada', color: 'bg-red-50 border-red-200' },
+  { id: 'arte_montada', title: 'Arte Montada', color: 'bg-sky-50 border-sky-200' },
+  { id: 'impresso', title: 'Impresso', color: 'bg-blue-200 border-blue-300' },
+  { id: 'estampado', title: 'Estampado', color: 'bg-yellow-50 border-yellow-200' },
+  { id: 'houve_falha', title: 'Houve Falha', color: 'bg-orange-100 border-orange-200' },
+  { id: 'finalizado', title: 'Finalizado', color: 'bg-green-50 border-green-200' },
 ];
 
 export default function ProductionKanban() {

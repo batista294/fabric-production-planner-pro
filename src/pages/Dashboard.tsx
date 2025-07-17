@@ -1,10 +1,10 @@
-
 import { useEffect, useState } from "react";
 import { collection, getDocs, query, where, Timestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Users, Package, AlertTriangle, TrendingUp, Printer, Scissors, Layers } from "lucide-react";
+import { DeliveryCalendar } from "@/components/DeliveryCalendar";
 
 interface DashboardStats {
   totalEmployees: number;
@@ -23,6 +23,17 @@ interface LowStockMaterial {
   unit: string;
 }
 
+interface DeliveryDate {
+  date: Date;
+  orders: {
+    id: string;
+    orderId: string;
+    clientName?: string;
+    quantity: number;
+    productName: string;
+  }[];
+}
+
 export default function Dashboard() {
   const [stats, setStats] = useState<DashboardStats>({
     totalEmployees: 0,
@@ -33,6 +44,7 @@ export default function Dashboard() {
     pendingIssues: 0,
   });
   const [lowStockMaterials, setLowStockMaterials] = useState<LowStockMaterial[]>([]);
+  const [deliveryDates, setDeliveryDates] = useState<DeliveryDate[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -72,6 +84,41 @@ export default function Dashboard() {
         const lowStock = materialsData.filter(material => 
           material.stockQuantity <= material.lowStockThreshold
         );
+        
+        // Fetch production orders for calendar
+        const ordersSnapshot = await getDocs(collection(db, 'production_orders'));
+        const orders = ordersSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as ProductionOrder[];
+        
+        // Group orders by due date
+        const dateMap: Map<string, DeliveryDate['orders']> = new Map();
+        
+        orders.forEach(order => {
+          if (!order.dueDate) return;
+          
+          const dateKey = new Date(order.dueDate).toDateString();
+          const existingOrders = dateMap.get(dateKey) || [];
+          
+          dateMap.set(dateKey, [
+            ...existingOrders,
+            {
+              id: order.id,
+              orderId: order.orderId,
+              clientName: order.client,
+              quantity: order.quantity,
+              productName: order.productName
+            }
+          ]);
+        });
+        
+        const deliveryDatesArray: DeliveryDate[] = Array.from(dateMap.entries()).map(
+          ([dateKey, orders]) => ({
+            date: new Date(dateKey),
+            orders
+          })
+        );
 
         setStats({
           totalEmployees,
@@ -83,6 +130,7 @@ export default function Dashboard() {
         });
         
         setLowStockMaterials(lowStock);
+        setDeliveryDates(deliveryDatesArray);
       } catch (error) {
         console.error("Error fetching stats:", error);
       } finally {
@@ -148,6 +196,9 @@ export default function Dashboard() {
             </Card>
           ))}
         </div>
+        <div className="grid gap-4 md:grid-cols-1">
+          <div className="h-64 bg-gray-200 animate-pulse rounded"></div>
+        </div>
       </div>
     );
   }
@@ -188,6 +239,11 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         ))}
+      </div>
+
+      {/* Delivery Calendar */}
+      <div className="grid gap-4 md:grid-cols-1">
+        <DeliveryCalendar deliveries={deliveryDates} />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
