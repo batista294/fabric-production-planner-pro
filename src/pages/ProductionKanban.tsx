@@ -36,6 +36,9 @@ interface ProductionOrder {
   dueDate: string;
   date: string;
   notes?: string;
+  client?: string;
+  productionStage?: string;
+  customerFeedback?: string;
 }
 
 const statusColumns = [
