@@ -98,12 +98,12 @@ export function OrderCard({ order }: OrderCardProps) {
       <CardContent className="p-4 space-y-3">
         <div className="flex items-start justify-between">
           <div>
-            <h4 className="font-semibold text-sm">{order.orderId}</h4>
+            <h4 className="font-semibold text-sm">🧾 {order.orderId}</h4>
             <p className="text-xs text-muted-foreground">{order.productName}</p>
             {order.client && (
               <div className="flex items-center gap-1 mt-1">
                 <User className="h-3 w-3 text-muted-foreground" />
-                <p className="text-xs text-muted-foreground">✅ Cliente {order.client}</p>
+                <p className="text-xs text-muted-foreground">✅ CLIENTE: {order.client}</p>
               </div>
             )}
           </div>
@@ -118,25 +118,25 @@ export function OrderCard({ order }: OrderCardProps) {
         <div className="flex items-center gap-4 text-xs text-muted-foreground">
           <div className="flex items-center gap-1">
             <Package2 className="h-3 w-3" />
-            <span>🔢 {order.quantity} un.</span>
+            <span>🔢 QUANTIDADE: {order.quantity} un.</span>
           </div>
           <div className="flex items-center gap-1">
             <Calendar className="h-3 w-3" />
-            <span>📦 {formatDate(order.dueDate)}</span>
+            <span>📦 ENTREGA EM: {formatDate(order.dueDate)}</span>
           </div>
         </div>
 
         {order.date && (
           <div className="flex items-center gap-1 text-xs text-muted-foreground">
             <CalendarClock className="h-3 w-3" />
-            <span>📅 Inclusão: {formatDate(order.date)}</span>
+            <span>📌 INCLUSO EM: {formatDate(order.date)}</span>
           </div>
         )}
         
         {order.productionStage && (
           <div className="mt-1">
             <Badge variant="outline" className={`text-xs w-full justify-center ${getStageColor(order.productionStage)}`}>
-              🔄 {order.productionStage}
+              📊 STATUS: {order.productionStage}
             </Badge>
           </div>
         )}
@@ -144,14 +144,14 @@ export function OrderCard({ order }: OrderCardProps) {
         {order.customerFeedback && (
           <div className="mt-1">
             <Badge variant="outline" className={`text-xs w-full justify-center ${getFeedbackColor(order.customerFeedback)}`}>
-              💬 {order.customerFeedback}
+              📣 FEEDBACK: {order.customerFeedback}
             </Badge>
           </div>
         )}
         
         {order.notes && (
           <p className="text-xs text-muted-foreground truncate" title={order.notes}>
-            📝 {order.notes}
+            📝 OBSERVAÇÕES: {order.notes}
           </p>
         )}
       </CardContent>
