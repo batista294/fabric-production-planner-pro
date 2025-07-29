@@ -89,8 +89,13 @@ export default function Dashboard() {
         const ordersSnapshot = await getDocs(collection(db, 'production_orders'));
         const orders = ordersSnapshot.docs.map(doc => ({
           id: doc.id,
+          orderId: doc.data().orderId || '',
+          productName: doc.data().productName || '',
+          quantity: doc.data().quantity || 0,
+          client: doc.data().client || '',
+          dueDate: doc.data().dueDate || '',
           ...doc.data()
-        })) as ProductionOrder[];
+        }));
         
         // Group orders by due date
         const dateMap: Map<string, DeliveryDate['orders']> = new Map();

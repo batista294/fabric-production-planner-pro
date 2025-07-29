@@ -11,7 +11,8 @@ import {
   Palette,
   Layers,
   ClipboardList,
-  LayoutGrid
+  LayoutGrid,
+  ShoppingBag
 } from "lucide-react";
 import {
   Sidebar,
@@ -29,6 +30,7 @@ const navigationItems = [
   { title: "Dashboard", url: "/", icon: Home },
   { title: "Funcionários", url: "/funcionarios", icon: Users },
   { title: "Produtos", url: "/produtos", icon: Package },
+  { title: "Catálogo Produtos", url: "/catalogo-produtos", icon: ShoppingBag },
   { title: "Matéria-Prima", url: "/materias-primas", icon: Layers },
   { title: "Tipos de Estampa", url: "/tipos-estampa", icon: Palette },
   { title: "Tipos de Falha", url: "/tipos-falha", icon: AlertTriangle },
