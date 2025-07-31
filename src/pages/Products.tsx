@@ -14,6 +14,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Edit, Trash2, Package, Upload } from "lucide-react";
 import { toast } from "sonner";
 
+interface ProductVariant {
+  size: string;
+  quantity: number;
+}
+
 interface Product {
   id: string;
   name: string;
@@ -23,6 +28,7 @@ interface Product {
   stampTypeName: string;
   imageUrl?: string;
   requiredMaterials?: RequiredMaterial[];
+  variants: ProductVariant[];
 }
 
 interface RequiredMaterial {
@@ -43,6 +49,8 @@ interface RawMaterial {
   unit: string;
 }
 
+const SIZES = ["PP", "P", "M", "G", "GG", "XG", "EXG"];
+
 export default function Products() {
   const [products, setProducts] = useState<Product[]>([]);
   const [stampTypes, setStampTypes] = useState<StampType[]>([]);
@@ -57,6 +65,7 @@ export default function Products() {
   const [stampTypeId, setStampTypeId] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [requiredMaterials, setRequiredMaterials] = useState<RequiredMaterial[]>([]);
+  const [variants, setVariants] = useState<ProductVariant[]>(SIZES.map(size => ({ size, quantity: 0 })));
   const [submitting, setSubmitting] = useState(false);
 
   const fetchProducts = async () => {
@@ -117,6 +126,7 @@ export default function Products() {
     setStampTypeId("");
     setImageFile(null);
     setRequiredMaterials([]);
+    setVariants(SIZES.map(size => ({ size, quantity: 0 })));
     setEditingProduct(null);
   };
 
@@ -145,6 +155,7 @@ export default function Products() {
         stampTypeId,
         stampTypeName: selectedStampType?.name || "",
         requiredMaterials,
+        variants: variants.filter(v => v.quantity > 0),
         ...(imageUrl && { imageUrl })
       };
 
@@ -174,6 +185,10 @@ export default function Products() {
     setPrice(product.price.toString());
     setStampTypeId(product.stampTypeId);
     setRequiredMaterials(product.requiredMaterials || []);
+    setVariants(SIZES.map(size => {
+      const existingVariant = product.variants?.find(v => v.size === size);
+      return { size, quantity: existingVariant?.quantity || 0 };
+    }));
     setDialogOpen(true);
   };
 
@@ -198,6 +213,12 @@ export default function Products() {
       updated[index] = { ...updated[index], [field]: value };
     }
     setRequiredMaterials(updated);
+  };
+
+  const updateVariantQuantity = (sizeIndex: number, quantity: number) => {
+    const newVariants = [...variants];
+    newVariants[sizeIndex].quantity = Math.max(0, quantity);
+    setVariants(newVariants);
   };
 
   const handleDelete = async (id: string) => {
@@ -250,7 +271,7 @@ export default function Products() {
               Novo Produto
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingProduct ? "Editar Produto" : "Novo Produto"}
@@ -365,10 +386,28 @@ export default function Products() {
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
-                ))}
-              </div>
+                 ))}
+               </div>
 
-              <div className="flex gap-2 pt-4">
+               <div className="space-y-2">
+                 <Label>Quantidades por Tamanho</Label>
+                 <div className="grid grid-cols-4 gap-4">
+                   {variants.map((variant, index) => (
+                     <div key={variant.size} className="space-y-1">
+                       <Label className="text-sm font-medium">{variant.size}</Label>
+                       <Input
+                         type="number"
+                         min="0"
+                         value={variant.quantity}
+                         onChange={(e) => updateVariantQuantity(index, parseInt(e.target.value) || 0)}
+                         className="text-center"
+                       />
+                     </div>
+                   ))}
+                 </div>
+               </div>
+
+               <div className="flex gap-2 pt-4">
                 <Button type="submit" disabled={submitting} className="flex-1">
                   {submitting 
                     ? (editingProduct ? "Atualizando..." : "Cadastrando...") 
@@ -409,9 +448,10 @@ export default function Products() {
                 <TableRow>
                   <TableHead>Imagem</TableHead>
                   <TableHead>Nome</TableHead>
-                  <TableHead>Descrição</TableHead>
-                  <TableHead>Preço</TableHead>
-                  <TableHead>Tipo de Estampa</TableHead>
+                   <TableHead>Descrição</TableHead>
+                   <TableHead>Preço</TableHead>
+                   <TableHead>Tamanhos</TableHead>
+                   <TableHead>Tipo de Estampa</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -427,12 +467,21 @@ export default function Products() {
                         </div>
                       )}
                     </TableCell>
-                    <TableCell className="font-medium">{product.name}</TableCell>
-                    <TableCell>{product.description}</TableCell>
-                    <TableCell>R$ {product.price.toFixed(2)}</TableCell>
-                    <TableCell>
-                      <Badge variant="stamp">{product.stampTypeName}</Badge>
-                    </TableCell>
+                     <TableCell className="font-medium">{product.name}</TableCell>
+                     <TableCell>{product.description}</TableCell>
+                     <TableCell>R$ {product.price.toFixed(2)}</TableCell>
+                     <TableCell>
+                       <div className="flex flex-wrap gap-1">
+                         {product.variants?.map((variant) => (
+                           <Badge key={variant.size} variant="outline" className="text-xs">
+                             {variant.size}: {variant.quantity}
+                           </Badge>
+                         )) || <span className="text-sm text-muted-foreground">-</span>}
+                       </div>
+                     </TableCell>
+                     <TableCell>
+                       <Badge variant="stamp">{product.stampTypeName}</Badge>
+                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex gap-2 justify-end">
                         <Button 
