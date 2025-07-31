@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { collection, addDoc, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -8,18 +7,31 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Printer, Plus } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { Printer, Plus, Trash2, Package } from "lucide-react";
 import { toast } from "sonner";
+
+interface ProductSize {
+  size: string;
+  quantity: number;
+}
+
+interface PrintProduct {
+  productId: string;
+  productName: string;
+  sizes: ProductSize[];
+}
 
 interface PrintEntry {
   id: string;
+  date: string;
+  description: string;
   stampTypeId: string;
   stampTypeName: string;
-  employeeId: string;
-  employeeName: string;
-  quantity: number;
-  date: string;
-  notes?: string;
+  peopleCount: number;
+  products: PrintProduct[];
 }
 
 interface StampType {
@@ -27,29 +39,47 @@ interface StampType {
   name: string;
 }
 
-interface Employee {
+interface ProductVariant {
+  size: string;
+  selected: boolean;
+}
+
+interface Product {
   id: string;
   name: string;
+  description: string;
+  price: number;
+  stampTypeId: string;
+  stampTypeName: string;
+  imageUrl?: string;
+  variants: ProductVariant[];
 }
 
 export default function PrintEntries() {
   const [printEntries, setPrintEntries] = useState<PrintEntry[]>([]);
   const [stampTypes, setStampTypes] = useState<StampType[]>([]);
-  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   
+  // Form states
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [description, setDescription] = useState("");
   const [stampTypeId, setStampTypeId] = useState("");
-  const [employeeId, setEmployeeId] = useState("");
-  const [quantity, setQuantity] = useState("");
-  const [notes, setNotes] = useState("");
+  const [peopleCount, setPeopleCount] = useState("");
+  const [selectedProducts, setSelectedProducts] = useState<PrintProduct[]>([]);
   const [submitting, setSubmitting] = useState(false);
+
+  // Product dialog states
+  const [productDialogOpen, setProductDialogOpen] = useState(false);
+  const [selectedProductId, setSelectedProductId] = useState("");
+  const [productSizes, setProductSizes] = useState<ProductSize[]>([]);
 
   const fetchData = async () => {
     try {
-      const [entriesSnapshot, stampTypesSnapshot, employeesSnapshot] = await Promise.all([
+      const [entriesSnapshot, stampTypesSnapshot, productsSnapshot] = await Promise.all([
         getDocs(collection(db, 'print_entries')),
         getDocs(collection(db, 'stamp_types')),
-        getDocs(collection(db, 'employees'))
+        getDocs(collection(db, 'products'))
       ]);
 
       const entriesData = entriesSnapshot.docs.map(doc => ({
@@ -62,14 +92,14 @@ export default function PrintEntries() {
         ...doc.data()
       })) as StampType[];
 
-      const employeesData = employeesSnapshot.docs.map(doc => ({
+      const productsData = productsSnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
-      })) as Employee[];
+      })) as Product[];
 
       setPrintEntries(entriesData);
       setStampTypes(stampTypesData);
-      setEmployees(employeesData);
+      setProducts(productsData);
     } catch (error) {
       console.error("Error fetching data:", error);
       toast.error("Erro ao carregar dados");
@@ -83,10 +113,56 @@ export default function PrintEntries() {
   }, []);
 
   const resetForm = () => {
+    setDate(new Date().toISOString().split('T')[0]);
+    setDescription("");
     setStampTypeId("");
-    setEmployeeId("");
-    setQuantity("");
-    setNotes("");
+    setPeopleCount("");
+    setSelectedProducts([]);
+  };
+
+  const resetProductDialog = () => {
+    setSelectedProductId("");
+    setProductSizes([]);
+  };
+
+  const handleProductSelect = (productId: string) => {
+    const product = products.find(p => p.id === productId);
+    if (product) {
+      setSelectedProductId(productId);
+      setProductSizes(product.variants.map(v => ({ size: v.size, quantity: 0 })));
+    }
+  };
+
+  const updateProductSizeQuantity = (sizeIndex: number, quantity: number) => {
+    const newSizes = [...productSizes];
+    newSizes[sizeIndex].quantity = quantity;
+    setProductSizes(newSizes);
+  };
+
+  const addProductToList = () => {
+    const product = products.find(p => p.id === selectedProductId);
+    const sizesWithQuantity = productSizes.filter(s => s.quantity > 0);
+    
+    if (!product || sizesWithQuantity.length === 0) {
+      toast.error("Selecione um produto e defina as quantidades");
+      return;
+    }
+
+    const printProduct: PrintProduct = {
+      productId: product.id,
+      productName: product.name,
+      sizes: sizesWithQuantity
+    };
+
+    setSelectedProducts([...selectedProducts, printProduct]);
+    setProductDialogOpen(false);
+    resetProductDialog();
+    toast.success("Produto adicionado ao lançamento");
+  };
+
+  const removeProductFromList = (index: number) => {
+    const newProducts = selectedProducts.filter((_, i) => i !== index);
+    setSelectedProducts(newProducts);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -94,17 +170,21 @@ export default function PrintEntries() {
     setSubmitting(true);
 
     try {
+      if (selectedProducts.length === 0) {
+        toast.error("Adicione pelo menos um produto ao lançamento");
+        setSubmitting(false);
+        return;
+      }
+
       const selectedStampType = stampTypes.find(st => st.id === stampTypeId);
-      const selectedEmployee = employees.find(emp => emp.id === employeeId);
 
       const entryData = {
+        date,
+        description,
         stampTypeId,
         stampTypeName: selectedStampType?.name || "",
-        employeeId,
-        employeeName: selectedEmployee?.name || "",
-        quantity: parseInt(quantity),
-        date: new Date().toISOString().split('T')[0],
-        notes: notes || ""
+        peopleCount: parseInt(peopleCount),
+        products: selectedProducts
       };
 
       await addDoc(collection(db, 'print_entries'), entryData);
@@ -162,6 +242,28 @@ export default function PrintEntries() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
+                <Label htmlFor="date">Data de Impressão</Label>
+                <Input
+                  id="date"
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description">Descrição da Impressão</Label>
+                <Textarea
+                  id="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Descreva o lançamento de impressão"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="stampType">Tipo de Estampa</Label>
                 <Select value={stampTypeId} onValueChange={setStampTypeId} required>
                   <SelectTrigger>
@@ -178,41 +280,111 @@ export default function PrintEntries() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="employee">Funcionário</Label>
-                <Select value={employeeId} onValueChange={setEmployeeId} required>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o funcionário" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {employees.map((employee) => (
-                      <SelectItem key={employee.id} value={employee.id}>
-                        {employee.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="quantity">Quantidade</Label>
+                <Label htmlFor="peopleCount">Quantidade de Pessoas no Processo</Label>
                 <Input
-                  id="quantity"
+                  id="peopleCount"
                   type="number"
-                  value={quantity}
-                  onChange={(e) => setQuantity(e.target.value)}
-                  placeholder="Quantidade impressa"
+                  value={peopleCount}
+                  onChange={(e) => setPeopleCount(e.target.value)}
+                  placeholder="Número de pessoas"
                   required
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="notes">Observações</Label>
-                <Input
-                  id="notes"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Observações opcionais"
-                />
+                <div className="flex items-center justify-between">
+                  <Label>Produtos Selecionados</Label>
+                  <Dialog open={productDialogOpen} onOpenChange={setProductDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button type="button" variant="outline" size="sm">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Adicionar Produto
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Adicionar Produto</DialogTitle>
+                        <DialogDescription>
+                          Selecione um produto e defina as quantidades por tamanho
+                        </DialogDescription>
+                      </DialogHeader>
+                      
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label>Produto</Label>
+                          <Select value={selectedProductId} onValueChange={handleProductSelect}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione um produto" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {products.map((product) => (
+                                <SelectItem key={product.id} value={product.id}>
+                                  {product.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {selectedProductId && (
+                          <div className="space-y-2">
+                            <Label>Quantidades por Tamanho</Label>
+                            <div className="grid grid-cols-2 gap-4">
+                              {productSizes.map((size, index) => (
+                                <div key={size.size} className="space-y-1">
+                                  <Label className="text-sm">{size.size}</Label>
+                                  <Input
+                                    type="number"
+                                    value={size.quantity}
+                                    onChange={(e) => updateProductSizeQuantity(index, parseInt(e.target.value) || 0)}
+                                    placeholder="0"
+                                    min="0"
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="flex gap-2">
+                          <Button type="button" onClick={addProductToList}>
+                            Adicionar
+                          </Button>
+                          <Button type="button" variant="outline" onClick={() => setProductDialogOpen(false)}>
+                            Cancelar
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+
+                {selectedProducts.length > 0 && (
+                  <div className="space-y-2 border rounded-lg p-3">
+                    {selectedProducts.map((product, index) => (
+                      <div key={index} className="flex items-center justify-between bg-muted/50 rounded p-2">
+                        <div>
+                          <p className="font-medium">{product.productName}</p>
+                          <div className="flex gap-1 flex-wrap">
+                            {product.sizes.map((size) => (
+                              <Badge key={size.size} variant="outline" className="text-xs">
+                                {size.size}: {size.quantity}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => removeProductFromList(index)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <Button type="submit" disabled={submitting} className="w-full">
@@ -247,17 +419,28 @@ export default function PrintEntries() {
                   <div key={entry.id} className="border rounded-lg p-4">
                     <div className="flex justify-between items-start mb-2">
                       <div>
-                        <p className="font-medium">{entry.stampTypeName}</p>
-                        <p className="text-sm text-muted-foreground">{entry.employeeName}</p>
+                        <p className="font-medium">{entry.description}</p>
+                        <p className="text-sm text-muted-foreground">{entry.stampTypeName}</p>
                       </div>
                       <div className="text-right">
-                        <p className="font-bold">{entry.quantity} unidades</p>
+                        <p className="font-bold">{entry.peopleCount} pessoas</p>
                         <p className="text-sm text-muted-foreground">{entry.date}</p>
                       </div>
                     </div>
-                    {entry.notes && (
-                      <p className="text-sm text-muted-foreground mt-2">{entry.notes}</p>
-                    )}
+                    <div className="space-y-1">
+                      {entry.products?.map((product, index) => (
+                        <div key={index} className="text-xs bg-muted/50 rounded p-2">
+                          <p className="font-medium">{product.productName}</p>
+                          <div className="flex gap-1 flex-wrap">
+                            {product.sizes.map((size) => (
+                              <Badge key={size.size} variant="outline" className="text-xs">
+                                {size.size}: {size.quantity}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ))}
               </div>
