@@ -39,7 +39,7 @@ interface StampType {
 }
 
 
-const SIZES = ["PP", "P", "M", "G", "GG", "XG", "EXG"];
+const SIZES = ["PP", "P", "M", "G", "GG", "G1", "G2", "G3", "G4"];
 
 export default function Products() {
   const [products, setProducts] = useState<Product[]>([]);
