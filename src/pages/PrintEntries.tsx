@@ -129,7 +129,9 @@ export default function PrintEntries() {
     const product = products.find(p => p.id === productId);
     if (product) {
       setSelectedProductId(productId);
-      setProductSizes(product.variants.map(v => ({ size: v.size, quantity: 0 })));
+      // Filter only selected variants (where selected is true)
+      const selectedVariants = product.variants.filter(v => v.selected);
+      setProductSizes(selectedVariants.map(v => ({ size: v.size, quantity: 0 })));
     }
   };
 
