@@ -47,7 +47,6 @@ interface StampEntry {
   endTime: string;
   breakTime: string;
   peopleCount: number;
-  stampType: string;
   observations: string;
   printLists: string[];
 }
@@ -75,7 +74,6 @@ interface Product {
 export default function StampEntries() {
   const [stampEntries, setStampEntries] = useState<StampEntry[]>([]);
   const [cells, setCells] = useState<Cell[]>([]);
-  const [stampTypes, setStampTypes] = useState<StampType[]>([]);
   const [printEntries, setPrintEntries] = useState<PrintEntry[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -88,7 +86,6 @@ export default function StampEntries() {
     endTime: "",
     breakTime: "",
     peopleCount: 1,
-    stampType: "",
     observations: "",
     printLists: [] as string[],
   });
@@ -117,13 +114,6 @@ export default function StampEntries() {
       })) as Cell[];
       setCells(cellsData);
 
-      // Load stamp types
-      const stampTypesSnapshot = await getDocs(collection(db, "stampTypes"));
-      const stampTypesData = stampTypesSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as StampType[];
-      setStampTypes(stampTypesData);
 
       // Load print entries
       const printSnapshot = await getDocs(collection(db, "printEntries"));
@@ -154,7 +144,7 @@ export default function StampEntries() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.stampDescription || !formData.productionCell || !formData.stampType) {
+    if (!formData.stampDescription || !formData.productionCell) {
       toast({
         title: "Erro",
         description: "Preencha todos os campos obrigatórios",
@@ -207,7 +197,7 @@ export default function StampEntries() {
       endTime: entry.endTime,
       breakTime: entry.breakTime,
       peopleCount: entry.peopleCount,
-      stampType: entry.stampType,
+      
       observations: entry.observations,
       printLists: entry.printLists,
     });
@@ -243,7 +233,7 @@ export default function StampEntries() {
       endTime: "",
       breakTime: "",
       peopleCount: 1,
-      stampType: "",
+      
       observations: "",
       printLists: [],
     });
@@ -345,24 +335,6 @@ export default function StampEntries() {
                   </Select>
                 </div>
 
-                <div>
-                  <Label>Tipo de Estampa</Label>
-                  <Select
-                    value={formData.stampType}
-                    onValueChange={(value) => setFormData({ ...formData, stampType: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecionar tipo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {stampTypes.map((type) => (
-                        <SelectItem key={type.id} value={type.name}>
-                          {type.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
               </div>
 
               <div className="grid grid-cols-3 gap-4">
@@ -484,7 +456,7 @@ export default function StampEntries() {
                 <p><strong>Célula:</strong> {entry.productionCell}</p>
                 <p><strong>Horário:</strong> {entry.startTime} - {entry.endTime}</p>
                 <p><strong>Pessoas:</strong> {entry.peopleCount}</p>
-                <p><strong>Tipo:</strong> {entry.stampType}</p>
+                
                 <p><strong>Intervalo:</strong> {entry.breakTime}</p>
               </div>
               {entry.observations && (
