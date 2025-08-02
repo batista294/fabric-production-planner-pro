@@ -23,6 +23,8 @@ import ProductionOrders from "./pages/ProductionOrders";
 import ProductionKanban from "./pages/ProductionKanban";
 import Productivity from "./pages/Productivity";
 import Config from "./pages/Config";
+import Cells from "./pages/Cells";
+import StampEntries from "./pages/StampEntries";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -54,6 +56,8 @@ const App = () => (
               <Route path="painel-producao" element={<ProductionKanban />} />
               <Route path="ordens-producao" element={<ProductionOrders />} />
               <Route path="produtividade" element={<Productivity />} />
+              <Route path="celulas" element={<Cells />} />
+              <Route path="lancamento-estampa" element={<StampEntries />} />
               <Route path="configuracoes" element={<Config />} />
             </Route>
             <Route path="*" element={<NotFound />} />
