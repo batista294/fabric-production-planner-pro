@@ -12,6 +12,8 @@ import {
   Layers,
   ClipboardList,
   LayoutGrid,
+  Factory,
+  Stamp,
   
 } from "lucide-react";
 import {
@@ -38,7 +40,9 @@ const navigationItems = [
 const productionItems = [
   { title: "Painel Kanban", url: "/painel-producao", icon: LayoutGrid },
   { title: "Ordens de Produção", url: "/ordens-producao", icon: ClipboardList },
+  { title: "Células", url: "/celulas", icon: Factory },
   { title: "Impressões", url: "/impressoes", icon: Printer },
+  { title: "Lançamento de Estampa", url: "/lancamento-estampa", icon: Stamp },
   { title: "Costuras", url: "/costuras", icon: Scissors },
   { title: "Falhas", url: "/falhas", icon: Bug },
 ];
