@@ -25,6 +25,7 @@ import Productivity from "./pages/Productivity";
 import Config from "./pages/Config";
 import Cells from "./pages/Cells";
 import StampEntries from "./pages/StampEntries";
+import SewingPieces from "./pages/SewingPieces";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -58,6 +59,7 @@ const App = () => (
               <Route path="produtividade" element={<Productivity />} />
               <Route path="celulas" element={<Cells />} />
               <Route path="lancamento-estampa" element={<StampEntries />} />
+              <Route path="pecas-costuradas" element={<SewingPieces />} />
               <Route path="configuracoes" element={<Config />} />
             </Route>
             <Route path="*" element={<NotFound />} />

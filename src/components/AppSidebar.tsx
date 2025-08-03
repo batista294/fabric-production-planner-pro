@@ -6,7 +6,6 @@ import {
   Package, 
   AlertTriangle, 
   Printer, 
-  Scissors, 
   Bug,
   Palette,
   Layers,
@@ -14,6 +13,7 @@ import {
   LayoutGrid,
   Factory,
   Stamp,
+  Scissors,
   
 } from "lucide-react";
 import {
@@ -44,6 +44,7 @@ const productionItems = [
   { title: "Impressões", url: "/impressoes", icon: Printer },
   { title: "Lançamento de Estampa", url: "/lancamento-estampa", icon: Stamp },
   { title: "Costuras", url: "/costuras", icon: Scissors },
+  { title: "Peças Costuradas", url: "/pecas-costuradas", icon: Scissors },
   { title: "Falhas", url: "/falhas", icon: Bug },
 ];
 
