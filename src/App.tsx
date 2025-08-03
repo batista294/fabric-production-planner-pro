@@ -26,6 +26,7 @@ import Config from "./pages/Config";
 import Cells from "./pages/Cells";
 import StampEntries from "./pages/StampEntries";
 import SewingPieces from "./pages/SewingPieces";
+import DispatchEntries from "./pages/DispatchEntries";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -60,6 +61,7 @@ const App = () => (
               <Route path="celulas" element={<Cells />} />
               <Route path="lancamento-estampa" element={<StampEntries />} />
               <Route path="pecas-costuradas" element={<SewingPieces />} />
+              <Route path="lancamento-expedicao" element={<DispatchEntries />} />
               <Route path="configuracoes" element={<Config />} />
             </Route>
             <Route path="*" element={<NotFound />} />
