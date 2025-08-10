@@ -65,6 +65,8 @@ interface StampType {
 interface PrintEntry {
   id: string;
   description: string;
+  date: string;
+  stampTypeName: string;
 }
 
 interface Product {
@@ -117,8 +119,8 @@ export default function StampEntries() {
       setCells(cellsData);
 
 
-      // Load print entries
-      const printSnapshot = await getDocs(collection(db, "printEntries"));
+      // Load print entries from print_entries collection
+      const printSnapshot = await getDocs(collection(db, "print_entries"));
       const printData = printSnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
@@ -431,21 +433,29 @@ export default function StampEntries() {
 
               <div>
                 <Label>Listas de Impressão</Label>
-                <div className="mt-2 space-y-2 max-h-32 overflow-y-auto border rounded-md p-2">
-                  {printEntries.map((printEntry) => (
-                    <div key={printEntry.id} className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id={printEntry.id}
-                        checked={formData.printLists.includes(printEntry.id)}
-                        onChange={() => handlePrintListToggle(printEntry.id)}
-                        className="rounded"
-                      />
-                      <label htmlFor={printEntry.id} className="text-sm">
-                        {printEntry.description}
-                      </label>
-                    </div>
-                  ))}
+                <div className="mt-2 space-y-2 max-h-32 overflow-y-auto border rounded-md p-2 bg-background">
+                  {printEntries.length === 0 ? (
+                    <p className="text-sm text-muted-foreground p-2">Nenhuma impressão cadastrada</p>
+                  ) : (
+                    printEntries.map((printEntry) => (
+                      <div key={printEntry.id} className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id={printEntry.id}
+                          checked={formData.printLists.includes(printEntry.id)}
+                          onChange={() => handlePrintListToggle(printEntry.id)}
+                          className="rounded"
+                        />
+                        <label htmlFor={printEntry.id} className="text-sm flex-1">
+                          <span className="font-medium">{printEntry.description}</span>
+                          {printEntry.stampTypeName && (
+                            <span className="text-muted-foreground"> - {printEntry.stampTypeName}</span>
+                          )}
+                          <span className="text-muted-foreground text-xs block">{printEntry.date}</span>
+                        </label>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
 
