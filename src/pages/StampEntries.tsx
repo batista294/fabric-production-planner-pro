@@ -49,7 +49,7 @@ interface StampEntry {
   workingHours: string;
   peopleCount: number;
   observations: string;
-  printLists: string[];
+  printLists: { printId: string; quantity: number }[];
 }
 
 interface Cell {
@@ -91,7 +91,7 @@ export default function StampEntries() {
     workingHours: "",
     peopleCount: 1,
     observations: "",
-    printLists: [] as string[],
+    printLists: [] as { printId: string; quantity: number }[],
   });
   const { toast } = useToast();
 
@@ -281,9 +281,18 @@ export default function StampEntries() {
   const handlePrintListToggle = (printId: string) => {
     setFormData(prev => ({
       ...prev,
-      printLists: prev.printLists.includes(printId)
-        ? prev.printLists.filter(id => id !== printId)
-        : [...prev.printLists, printId]
+      printLists: prev.printLists.find(item => item.printId === printId)
+        ? prev.printLists.filter(item => item.printId !== printId)
+        : [...prev.printLists, { printId, quantity: 1 }]
+    }));
+  };
+
+  const updatePrintQuantity = (printId: string, quantity: number) => {
+    setFormData(prev => ({
+      ...prev,
+      printLists: prev.printLists.map(item => 
+        item.printId === printId ? { ...item, quantity } : item
+      )
     }));
   };
 
@@ -433,28 +442,47 @@ export default function StampEntries() {
 
               <div>
                 <Label>Listas de Impressão</Label>
-                <div className="mt-2 space-y-2 max-h-32 overflow-y-auto border rounded-md p-2 bg-background">
+                <div className="mt-2 space-y-2 max-h-40 overflow-y-auto border rounded-md p-2 bg-background">
                   {printEntries.length === 0 ? (
                     <p className="text-sm text-muted-foreground p-2">Nenhuma impressão cadastrada</p>
                   ) : (
-                    printEntries.map((printEntry) => (
-                      <div key={printEntry.id} className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          id={printEntry.id}
-                          checked={formData.printLists.includes(printEntry.id)}
-                          onChange={() => handlePrintListToggle(printEntry.id)}
-                          className="rounded"
-                        />
-                        <label htmlFor={printEntry.id} className="text-sm flex-1">
-                          <span className="font-medium">{printEntry.description}</span>
-                          {printEntry.stampTypeName && (
-                            <span className="text-muted-foreground"> - {printEntry.stampTypeName}</span>
-                          )}
-                          <span className="text-muted-foreground text-xs block">{printEntry.date}</span>
-                        </label>
-                      </div>
-                    ))
+                    printEntries.map((printEntry) => {
+                      const selectedPrint = formData.printLists.find(item => item.printId === printEntry.id);
+                      const isSelected = !!selectedPrint;
+                      
+                      return (
+                        <div key={printEntry.id} className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id={printEntry.id}
+                            checked={isSelected}
+                            onChange={() => handlePrintListToggle(printEntry.id)}
+                            className="rounded"
+                          />
+                          <div className="flex-1">
+                            <label htmlFor={printEntry.id} className="text-sm">
+                              <span className="font-medium">{printEntry.description}</span>
+                              {printEntry.stampTypeName && (
+                                <span className="text-muted-foreground"> - {printEntry.stampTypeName}</span>
+                              )}
+                              <span className="text-muted-foreground text-xs block">{printEntry.date}</span>
+                            </label>
+                            {isSelected && (
+                              <div className="mt-1">
+                                <Input
+                                  type="number"
+                                  min="1"
+                                  value={selectedPrint.quantity}
+                                  onChange={(e) => updatePrintQuantity(printEntry.id, Number(e.target.value))}
+                                  className="w-20 h-8 text-sm"
+                                  placeholder="Qtd"
+                                />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })
                   )}
                 </div>
               </div>
