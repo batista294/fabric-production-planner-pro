@@ -8,7 +8,14 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Edit, Trash2 } from "lucide-react";
+import { Plus, Edit, Trash2, Package } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+
+interface SewingProduct {
+  productId: string;
+  productName: string;
+  quantity: number;
+}
 
 interface SewingPiece {
   id: string;
@@ -16,7 +23,7 @@ interface SewingPiece {
   sewingDescription: string;
   productionCell: string;
   peopleCount: number;
-  products: string[];
+  products: SewingProduct[];
 }
 
 interface Cell {
@@ -56,8 +63,13 @@ export default function SewingPieces() {
     sewingDescription: "",
     productionCell: "",
     peopleCount: 1,
-    products: [] as string[],
+    products: [] as SewingProduct[],
   });
+
+  // Product dialog states
+  const [productDialogOpen, setProductDialogOpen] = useState(false);
+  const [selectedProductId, setSelectedProductId] = useState("");
+  const [productQuantity, setProductQuantity] = useState(0);
 
   useEffect(() => {
     fetchData();
@@ -205,11 +217,49 @@ export default function SewingPieces() {
     setEditingPiece(null);
   };
 
-  const getProductNames = (productIds: string[]) => {
-    return productIds.map(id => {
-      const product = products.find(p => p.id === id);
-      return product?.name || id;
-    }).join(", ");
+  const resetProductDialog = () => {
+    setSelectedProductId("");
+    setProductQuantity(0);
+  };
+
+  const handleProductSelect = (productId: string) => {
+    setSelectedProductId(productId);
+    setProductQuantity(0);
+  };
+
+  const addProductToList = () => {
+    const product = products.find(p => p.id === selectedProductId);
+    
+    if (!product || productQuantity <= 0) {
+      toast({
+        title: "Erro",
+        description: "Selecione um produto e defina a quantidade",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const sewingProduct: SewingProduct = {
+      productId: product.id,
+      productName: product.name,
+      quantity: productQuantity
+    };
+
+    setFormData({
+      ...formData,
+      products: [...formData.products, sewingProduct]
+    });
+    setProductDialogOpen(false);
+    resetProductDialog();
+    toast({
+      title: "Sucesso",
+      description: "Produto adicionado ao lançamento",
+    });
+  };
+
+  const removeProductFromList = (index: number) => {
+    const newProducts = formData.products.filter((_, i) => i !== index);
+    setFormData({ ...formData, products: newProducts });
   };
 
   const getCellName = (cellId: string) => {
@@ -303,33 +353,86 @@ export default function SewingPieces() {
                 </Select>
               </div>
 
-              <div>
-                <Label>Produtos</Label>
-                <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto border rounded-md p-2">
-                  {products.map((product) => (
-                    <label key={product.id} className="flex items-center space-x-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={formData.products.includes(product.id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setFormData({
-                              ...formData,
-                              products: [...formData.products, product.id]
-                            });
-                          } else {
-                            setFormData({
-                              ...formData,
-                              products: formData.products.filter(id => id !== product.id)
-                            });
-                          }
-                        }}
-                        className="rounded"
-                      />
-                      <span className="text-sm">{product.name}</span>
-                    </label>
-                  ))}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>Produtos Selecionados</Label>
+                  <Dialog open={productDialogOpen} onOpenChange={setProductDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button type="button" variant="outline" size="sm">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Adicionar Produto
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Adicionar Produto</DialogTitle>
+                      </DialogHeader>
+                      
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label>Produto</Label>
+                          <Select value={selectedProductId} onValueChange={handleProductSelect}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione um produto" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {products.map((product) => (
+                                <SelectItem key={product.id} value={product.id}>
+                                  {product.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {selectedProductId && (
+                          <div className="space-y-2">
+                            <Label>Quantidade</Label>
+                            <Input
+                              type="number"
+                              value={productQuantity}
+                              onChange={(e) => setProductQuantity(parseInt(e.target.value) || 0)}
+                              placeholder="0"
+                              min="1"
+                            />
+                          </div>
+                        )}
+
+                        <div className="flex gap-2">
+                          <Button type="button" onClick={addProductToList}>
+                            Adicionar
+                          </Button>
+                          <Button type="button" variant="outline" onClick={() => setProductDialogOpen(false)}>
+                            Cancelar
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 </div>
+
+                {formData.products.length > 0 && (
+                  <div className="space-y-2 border rounded-lg p-3">
+                    {formData.products.map((product, index) => (
+                      <div key={index} className="flex items-center justify-between bg-muted/50 rounded p-2">
+                        <div>
+                          <p className="font-medium">{product.productName}</p>
+                          <Badge variant="outline" className="text-xs">
+                            Quantidade: {product.quantity}
+                          </Badge>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => removeProductFromList(index)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-end space-x-2">
@@ -369,12 +472,24 @@ export default function SewingPieces() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="grid grid-cols-2 gap-4 text-sm mb-3">
                   <p><strong>Data:</strong> {new Date(piece.date).toLocaleDateString("pt-BR")}</p>
                   <p><strong>Célula:</strong> {getCellName(piece.productionCell)}</p>
                   <p><strong>Pessoas:</strong> {piece.peopleCount}</p>
-                  <p><strong>Produtos:</strong> {getProductNames(piece.products)}</p>
                 </div>
+                {piece.products && piece.products.length > 0 && (
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">Produtos:</p>
+                    {piece.products.map((product, index) => (
+                      <div key={index} className="text-xs bg-muted/50 rounded p-2">
+                        <p className="font-medium">{product.productName}</p>
+                        <Badge variant="outline" className="text-xs">
+                          Quantidade: {product.quantity}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))
