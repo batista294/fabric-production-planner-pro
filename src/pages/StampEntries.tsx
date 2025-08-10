@@ -46,6 +46,7 @@ interface StampEntry {
   startTime: string;
   endTime: string;
   breakTime: string;
+  workingHours: string;
   peopleCount: number;
   observations: string;
   printLists: string[];
@@ -85,6 +86,7 @@ export default function StampEntries() {
     startTime: "",
     endTime: "",
     breakTime: "",
+    workingHours: "",
     peopleCount: 1,
     observations: "",
     printLists: [] as string[],
@@ -196,8 +198,8 @@ export default function StampEntries() {
       startTime: entry.startTime,
       endTime: entry.endTime,
       breakTime: entry.breakTime,
+      workingHours: entry.workingHours || "",
       peopleCount: entry.peopleCount,
-      
       observations: entry.observations,
       printLists: entry.printLists,
     });
@@ -232,12 +234,46 @@ export default function StampEntries() {
       startTime: "",
       endTime: "",
       breakTime: "",
+      workingHours: "",
       peopleCount: 1,
-      
       observations: "",
       printLists: [],
     });
     setEditingEntry(null);
+  };
+
+  const timeToMinutes = (time: string): number => {
+    if (!time) return 0;
+    const [hours, minutes] = time.split(':').map(Number);
+    return hours * 60 + minutes;
+  };
+
+  const minutesToTime = (minutes: number): string => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+  };
+
+  const calculateWorkingHours = (startTime: string, endTime: string, breakTime: string): string => {
+    if (!startTime || !endTime) return "";
+    
+    const startMinutes = timeToMinutes(startTime);
+    const endMinutes = timeToMinutes(endTime);
+    const breakMinutes = timeToMinutes(breakTime);
+    
+    let workingMinutes = endMinutes - startMinutes - breakMinutes;
+    
+    if (workingMinutes < 0) {
+      // Handle overnight work (crossing midnight)
+      workingMinutes = (24 * 60 - startMinutes) + endMinutes - breakMinutes;
+    }
+    
+    return minutesToTime(workingMinutes);
+  };
+
+  const updateWorkingHours = (startTime: string, endTime: string, breakTime: string) => {
+    const workingHours = calculateWorkingHours(startTime, endTime, breakTime);
+    setFormData(prev => ({ ...prev, workingHours }));
   };
 
   const handlePrintListToggle = (printId: string) => {
@@ -296,22 +332,14 @@ export default function StampEntries() {
                 </div>
 
                 <div>
-                  <Label>Descrição da Estampa</Label>
-                  <Select
+                  <Label htmlFor="stampDescription">Tipo de Estampa</Label>
+                  <Input
+                    id="stampDescription"
+                    type="text"
                     value={formData.stampDescription}
-                    onValueChange={(value) => setFormData({ ...formData, stampDescription: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecionar produto" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {products.map((product) => (
-                        <SelectItem key={product.id} value={product.name}>
-                          {product.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    onChange={(e) => setFormData({ ...formData, stampDescription: e.target.value })}
+                    placeholder="Digite o tipo de estampa"
+                  />
                 </div>
               </div>
 
@@ -337,14 +365,18 @@ export default function StampEntries() {
 
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-4 gap-4">
                 <div>
                   <Label htmlFor="startTime">Horário de Início</Label>
                   <Input
                     id="startTime"
                     type="time"
                     value={formData.startTime}
-                    onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                    onChange={(e) => {
+                      const newStartTime = e.target.value;
+                      setFormData({ ...formData, startTime: newStartTime });
+                      updateWorkingHours(newStartTime, formData.endTime, formData.breakTime);
+                    }}
                   />
                 </div>
                 <div>
@@ -353,7 +385,11 @@ export default function StampEntries() {
                     id="endTime"
                     type="time"
                     value={formData.endTime}
-                    onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                    onChange={(e) => {
+                      const newEndTime = e.target.value;
+                      setFormData({ ...formData, endTime: newEndTime });
+                      updateWorkingHours(formData.startTime, newEndTime, formData.breakTime);
+                    }}
                   />
                 </div>
                 <div>
@@ -362,7 +398,22 @@ export default function StampEntries() {
                     id="breakTime"
                     type="time"
                     value={formData.breakTime}
-                    onChange={(e) => setFormData({ ...formData, breakTime: e.target.value })}
+                    onChange={(e) => {
+                      const newBreakTime = e.target.value;
+                      setFormData({ ...formData, breakTime: newBreakTime });
+                      updateWorkingHours(formData.startTime, formData.endTime, newBreakTime);
+                    }}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="workingHours">Horas Trabalhadas</Label>
+                  <Input
+                    id="workingHours"
+                    type="text"
+                    value={formData.workingHours}
+                    readOnly
+                    className="bg-muted"
+                    placeholder="00:00"
                   />
                 </div>
               </div>
@@ -456,8 +507,8 @@ export default function StampEntries() {
                 <p><strong>Célula:</strong> {entry.productionCell}</p>
                 <p><strong>Horário:</strong> {entry.startTime} - {entry.endTime}</p>
                 <p><strong>Pessoas:</strong> {entry.peopleCount}</p>
-                
                 <p><strong>Intervalo:</strong> {entry.breakTime}</p>
+                <p><strong>Horas Trabalhadas:</strong> {entry.workingHours || "N/A"}</p>
               </div>
               {entry.observations && (
                 <p className="mt-2 text-sm text-muted-foreground">
