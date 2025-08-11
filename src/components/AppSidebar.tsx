@@ -11,6 +11,7 @@ import {
   Layers,
   Factory,
   Stamp,
+  Scissors,
   Truck,
 } from "lucide-react";
 import {
@@ -38,6 +39,7 @@ const productionItems = [
   { title: "Células", url: "/celulas", icon: Factory },
   { title: "Impressões", url: "/impressoes", icon: Printer },
   { title: "Lançamento de Estampa", url: "/lancamento-estampa", icon: Stamp },
+  { title: "Peças Costuradas", url: "/pecas-costuradas", icon: Scissors },
   { title: "Lançamento - Expedição", url: "/lancamento-expedicao", icon: Truck },
   { title: "Falhas", url: "/falhas", icon: Bug },
 ];
