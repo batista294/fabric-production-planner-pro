@@ -9,13 +9,9 @@ import {
   Bug,
   Palette,
   Layers,
-  ClipboardList,
-  LayoutGrid,
   Factory,
   Stamp,
-  Scissors,
   Truck,
-  
 } from "lucide-react";
 import {
   Sidebar,
@@ -39,13 +35,9 @@ const navigationItems = [
 ];
 
 const productionItems = [
-  { title: "Painel Kanban", url: "/painel-producao", icon: LayoutGrid },
-  { title: "Ordens de Produção", url: "/ordens-producao", icon: ClipboardList },
   { title: "Células", url: "/celulas", icon: Factory },
   { title: "Impressões", url: "/impressoes", icon: Printer },
   { title: "Lançamento de Estampa", url: "/lancamento-estampa", icon: Stamp },
-  { title: "Costuras", url: "/costuras", icon: Scissors },
-  { title: "Peças Costuradas", url: "/pecas-costuradas", icon: Scissors },
   { title: "Lançamento - Expedição", url: "/lancamento-expedicao", icon: Truck },
   { title: "Falhas", url: "/falhas", icon: Bug },
 ];
