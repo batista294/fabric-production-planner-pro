@@ -555,6 +555,26 @@ export default function StampEntries() {
                 <p><strong>Intervalo:</strong> {entry.breakTime}</p>
                 <p><strong>Horas Trabalhadas:</strong> {entry.workingHours || "N/A"}</p>
               </div>
+              {entry.printLists && entry.printLists.length > 0 && (
+                <div className="mt-3">
+                  <p className="text-sm font-medium mb-2">Impressões Selecionadas:</p>
+                  <div className="space-y-1">
+                    {entry.printLists.map((item) => {
+                      const printEntry = printEntries.find(p => p.id === item.printId);
+                      return (
+                        <div key={item.printId} className="flex justify-between text-sm text-muted-foreground">
+                          <span>{printEntry?.description || 'Impressão não encontrada'}</span>
+                          <span>{item.quantity} unidades</span>
+                        </div>
+                      );
+                    })}
+                    <div className="flex justify-between text-sm font-medium border-t pt-1">
+                      <span>Total:</span>
+                      <span>{entry.printLists.reduce((total, item) => total + item.quantity, 0)} unidades</span>
+                    </div>
+                  </div>
+                </div>
+              )}
               {entry.observations && (
                 <p className="mt-2 text-sm text-muted-foreground">
                   <strong>Observações:</strong> {entry.observations}
