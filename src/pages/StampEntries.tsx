@@ -560,10 +560,13 @@ export default function StampEntries() {
                   <p className="text-sm font-medium mb-2">Impressões Selecionadas:</p>
                   <div className="space-y-1">
                     {entry.printLists.map((item) => {
+                      console.log('Looking for print ID:', item.printId);
+                      console.log('Available print entries:', printEntries.map(p => ({ id: p.id, description: p.description })));
                       const printEntry = printEntries.find(p => p.id === item.printId);
+                      console.log('Found print entry:', printEntry);
                       return (
                         <div key={item.printId} className="flex justify-between text-sm text-muted-foreground">
-                          <span>{printEntry?.description || 'Impressão não encontrada'}</span>
+                          <span>{printEntry?.description || `Impressão ID: ${item.printId}`}</span>
                           <span>{item.quantity} unidades</span>
                         </div>
                       );
