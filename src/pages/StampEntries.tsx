@@ -441,7 +441,14 @@ export default function StampEntries() {
               </div>
 
               <div>
-                <Label>Listas de Impressão</Label>
+                <div className="flex justify-between items-center">
+                  <Label>Listas de Impressão</Label>
+                  {formData.printLists.length > 0 && (
+                    <span className="text-sm text-muted-foreground">
+                      Total: {formData.printLists.reduce((total, item) => total + item.quantity, 0)} unidades
+                    </span>
+                  )}
+                </div>
                 <div className="mt-2 space-y-2 max-h-40 overflow-y-auto border rounded-md p-2 bg-background">
                   {printEntries.length === 0 ? (
                     <p className="text-sm text-muted-foreground p-2">Nenhuma impressão cadastrada</p>
