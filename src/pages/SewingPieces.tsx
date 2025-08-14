@@ -279,6 +279,16 @@ export default function SewingPieces() {
     return cell ? cell.name : "Célula não encontrada";
   };
 
+  const getTotalQuantity = (products: SewingProduct[]) => {
+    return products.reduce((total, product) => total + product.quantity, 0);
+  };
+
+  const getOverallTotalQuantity = () => {
+    return sewingPieces.reduce((total, piece) => {
+      return total + getTotalQuantity(piece.products);
+    }, 0);
+  };
+
   if (loading) {
     return <div className="p-6">Carregando...</div>;
   }
@@ -289,6 +299,11 @@ export default function SewingPieces() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Peças Costuradas</h1>
           <p className="text-muted-foreground">Gerencie as peças costuradas</p>
+          {sewingPieces.length > 0 && (
+            <p className="text-sm text-muted-foreground mt-1">
+              <strong>Total de peças: {getOverallTotalQuantity()}</strong>
+            </p>
+          )}
         </div>
         
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -468,7 +483,7 @@ export default function SewingPieces() {
               <CardContent>
                 <div className="space-y-2">
                   <p className="text-sm">
-                    <strong>Pessoas:</strong> {sewingPiece.peopleCount}
+                    <strong>Pessoas:</strong> {sewingPiece.peopleCount} | <strong>Total de peças:</strong> {getTotalQuantity(sewingPiece.products)}
                   </p>
                   <div>
                     <strong className="text-sm">Produtos:</strong>

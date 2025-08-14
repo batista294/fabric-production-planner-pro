@@ -196,6 +196,18 @@ export default function PrintEntries() {
     setSelectedProducts(newProducts);
   };
 
+  const getTotalQuantity = (products: PrintProduct[]) => {
+    return products.reduce((total, product) => {
+      return total + product.sizes.reduce((sizeTotal, size) => sizeTotal + size.quantity, 0);
+    }, 0);
+  };
+
+  const getOverallTotalQuantity = () => {
+    return printEntries.reduce((total, entry) => {
+      return total + getTotalQuantity(entry.products || []);
+    }, 0);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
@@ -259,6 +271,11 @@ export default function PrintEntries() {
           <p className="text-muted-foreground">
             Registre as impressões realizadas na produção
           </p>
+          {printEntries.length > 0 && (
+            <p className="text-sm text-muted-foreground mt-1">
+              <strong>Total de peças impressas: {getOverallTotalQuantity()}</strong>
+            </p>
+          )}
         </div>
       </div>
 
@@ -470,6 +487,7 @@ export default function PrintEntries() {
                         <div className="text-right">
                           <p className="font-bold">{entry.peopleCount} pessoas</p>
                           <p className="text-sm text-muted-foreground">{entry.date}</p>
+                          <p className="text-sm font-medium text-primary">Total: {getTotalQuantity(entry.products || [])} peças</p>
                         </div>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
