@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { collection, addDoc, getDocs } from "firebase/firestore";
+import { collection, addDoc, getDocs, doc, deleteDoc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,9 +8,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Printer, Plus, Trash2, Package } from "lucide-react";
+import { Printer, Plus, Trash2, Package, Edit, MoreVertical } from "lucide-react";
 import { toast } from "sonner";
 
 interface ProductSize {
@@ -74,6 +76,10 @@ export default function PrintEntries() {
   const [selectedProductId, setSelectedProductId] = useState("");
   const [productSizes, setProductSizes] = useState<ProductSize[]>([]);
 
+  // Edit and delete states
+  const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
+  const [entryToDelete, setEntryToDelete] = useState<string | null>(null);
+
   const fetchData = async () => {
     try {
       const [entriesSnapshot, stampTypesSnapshot, productsSnapshot] = await Promise.all([
@@ -118,6 +124,29 @@ export default function PrintEntries() {
     setStampTypeId("");
     setPeopleCount("");
     setSelectedProducts([]);
+    setEditingEntryId(null);
+  };
+
+  const handleEdit = (entry: PrintEntry) => {
+    setDate(entry.date);
+    setDescription(entry.description);
+    setStampTypeId(entry.stampTypeId);
+    setPeopleCount(entry.peopleCount.toString());
+    setSelectedProducts(entry.products);
+    setEditingEntryId(entry.id);
+    toast.success("Lançamento carregado para edição");
+  };
+
+  const handleDelete = async (entryId: string) => {
+    try {
+      await deleteDoc(doc(db, 'print_entries', entryId));
+      toast.success("Lançamento excluído com sucesso!");
+      fetchData();
+    } catch (error) {
+      console.error("Error deleting entry:", error);
+      toast.error("Erro ao excluir lançamento");
+    }
+    setEntryToDelete(null);
   };
 
   const resetProductDialog = () => {
@@ -189,8 +218,13 @@ export default function PrintEntries() {
         products: selectedProducts
       };
 
-      await addDoc(collection(db, 'print_entries'), entryData);
-      toast.success("Lançamento de impressão registrado com sucesso!");
+      if (editingEntryId) {
+        await updateDoc(doc(db, 'print_entries', editingEntryId), entryData);
+        toast.success("Lançamento de impressão atualizado com sucesso!");
+      } else {
+        await addDoc(collection(db, 'print_entries'), entryData);
+        toast.success("Lançamento de impressão registrado com sucesso!");
+      }
       
       resetForm();
       fetchData();
@@ -390,8 +424,16 @@ export default function PrintEntries() {
               </div>
 
               <Button type="submit" disabled={submitting} className="w-full">
-                {submitting ? "Registrando..." : "Registrar Lançamento"}
+                {submitting 
+                  ? (editingEntryId ? "Atualizando..." : "Registrando...") 
+                  : (editingEntryId ? "Atualizar Lançamento" : "Registrar Lançamento")
+                }
               </Button>
+              {editingEntryId && (
+                <Button type="button" variant="outline" onClick={resetForm} className="w-full">
+                  Cancelar Edição
+                </Button>
+              )}
             </form>
           </CardContent>
         </Card>
@@ -420,13 +462,35 @@ export default function PrintEntries() {
                 {printEntries.slice(-10).reverse().map((entry) => (
                   <div key={entry.id} className="border rounded-lg p-4">
                     <div className="flex justify-between items-start mb-2">
-                      <div>
+                      <div className="flex-1">
                         <p className="font-medium">{entry.description}</p>
                         <p className="text-sm text-muted-foreground">{entry.stampTypeName}</p>
                       </div>
-                      <div className="text-right">
-                        <p className="font-bold">{entry.peopleCount} pessoas</p>
-                        <p className="text-sm text-muted-foreground">{entry.date}</p>
+                      <div className="flex items-center gap-2">
+                        <div className="text-right">
+                          <p className="font-bold">{entry.peopleCount} pessoas</p>
+                          <p className="text-sm text-muted-foreground">{entry.date}</p>
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleEdit(entry)}>
+                              <Edit className="h-4 w-4 mr-2" />
+                              Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => setEntryToDelete(entry.id)}
+                              className="text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Excluir
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </div>
                     <div className="space-y-1">
@@ -450,6 +514,27 @@ export default function PrintEntries() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Confirmation Dialog for Deletion */}
+      <AlertDialog open={!!entryToDelete} onOpenChange={() => setEntryToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir este lançamento de impressão? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => entryToDelete && handleDelete(entryToDelete)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
