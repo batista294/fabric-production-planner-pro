@@ -8,7 +8,6 @@ import {
   Printer, 
   Bug,
   Palette,
-  Layers,
   Factory,
   Stamp,
   Scissors,
@@ -30,7 +29,6 @@ const navigationItems = [
   { title: "Dashboard", url: "/", icon: Home },
   { title: "Funcionários", url: "/funcionarios", icon: Users },
   { title: "Produtos", url: "/produtos", icon: Package },
-  { title: "Matéria-Prima", url: "/materias-primas", icon: Layers },
   { title: "Tipos de Estampa", url: "/tipos-estampa", icon: Palette },
   { title: "Tipos de Falha", url: "/tipos-falha", icon: AlertTriangle },
 ];
