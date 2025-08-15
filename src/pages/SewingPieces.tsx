@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Edit, Plus, X } from "lucide-react";
+import { Trash2, Edit, Plus, X, Filter, BarChart3 } from "lucide-react";
 
 interface SewingProduct {
   productId: string;
@@ -55,9 +55,12 @@ export default function SewingPieces() {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
+  const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedProductId, setSelectedProductId] = useState("");
   const [selectedProductQuantity, setSelectedProductQuantity] = useState(1);
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   const [formData, setFormData] = useState({
     date: "",
@@ -289,6 +292,65 @@ export default function SewingPieces() {
     }, 0);
   };
 
+  const getFilteredSewingPieces = () => {
+    if (!startDate && !endDate) return sewingPieces;
+    
+    return sewingPieces.filter(piece => {
+      const pieceDate = new Date(piece.date);
+      const start = startDate ? new Date(startDate) : null;
+      const end = endDate ? new Date(endDate) : null;
+      
+      if (start && end) {
+        return pieceDate >= start && pieceDate <= end;
+      } else if (start) {
+        return pieceDate >= start;
+      } else if (end) {
+        return pieceDate <= end;
+      }
+      return true;
+    });
+  };
+
+  const getAnalytics = () => {
+    const filteredPieces = getFilteredSewingPieces();
+    
+    const totalPieces = filteredPieces.reduce((total, piece) => {
+      return total + getTotalQuantity(piece.products);
+    }, 0);
+    
+    const totalPeople = filteredPieces.reduce((total, piece) => {
+      return total + piece.peopleCount;
+    }, 0);
+    
+    const avgPiecesPerEntry = filteredPieces.length > 0 ? totalPieces / filteredPieces.length : 0;
+    const avgPeoplePerEntry = filteredPieces.length > 0 ? totalPeople / filteredPieces.length : 0;
+    
+    const cellStats = filteredPieces.reduce((stats, piece) => {
+      const cellName = getCellName(piece.cellId);
+      if (!stats[cellName]) {
+        stats[cellName] = { pieces: 0, people: 0, entries: 0 };
+      }
+      stats[cellName].pieces += getTotalQuantity(piece.products);
+      stats[cellName].people += piece.peopleCount;
+      stats[cellName].entries += 1;
+      return stats;
+    }, {} as Record<string, { pieces: number; people: number; entries: number }>);
+
+    return {
+      totalPieces,
+      totalPeople,
+      totalEntries: filteredPieces.length,
+      avgPiecesPerEntry: Math.round(avgPiecesPerEntry * 100) / 100,
+      avgPeoplePerEntry: Math.round(avgPeoplePerEntry * 100) / 100,
+      cellStats
+    };
+  };
+
+  const clearFilters = () => {
+    setStartDate("");
+    setEndDate("");
+  };
+
   if (loading) {
     return <div className="p-6">Carregando...</div>;
   }
@@ -306,7 +368,123 @@ export default function SewingPieces() {
           )}
         </div>
         
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <div className="flex space-x-2">
+          <Dialog open={isAnalyticsOpen} onOpenChange={setIsAnalyticsOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <BarChart3 className="h-4 w-4 mr-2" />
+                Estatísticas
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl">
+              <DialogHeader>
+                <DialogTitle>Estatísticas das Peças Costuradas</DialogTitle>
+              </DialogHeader>
+              
+              <div className="space-y-6">
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="startDate">Data Início</Label>
+                    <Input
+                      id="startDate"
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="endDate">Data Fim</Label>
+                    <Input
+                      id="endDate"
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                    />
+                  </div>
+                  <div className="flex items-end">
+                    <Button variant="outline" onClick={clearFilters} className="w-full">
+                      Limpar Filtros
+                    </Button>
+                  </div>
+                </div>
+
+                {(() => {
+                  const analytics = getAnalytics();
+                  return (
+                    <>
+                      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                        <Card>
+                          <CardContent className="p-4 text-center">
+                            <div className="text-2xl font-bold">{analytics.totalPieces}</div>
+                            <p className="text-sm text-muted-foreground">Total de Peças</p>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardContent className="p-4 text-center">
+                            <div className="text-2xl font-bold">{analytics.totalPeople}</div>
+                            <p className="text-sm text-muted-foreground">Total de Pessoas</p>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardContent className="p-4 text-center">
+                            <div className="text-2xl font-bold">{analytics.totalEntries}</div>
+                            <p className="text-sm text-muted-foreground">Registros</p>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardContent className="p-4 text-center">
+                            <div className="text-2xl font-bold">{analytics.avgPiecesPerEntry}</div>
+                            <p className="text-sm text-muted-foreground">Peças/Registro</p>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardContent className="p-4 text-center">
+                            <div className="text-2xl font-bold">{analytics.avgPeoplePerEntry}</div>
+                            <p className="text-sm text-muted-foreground">Pessoas/Registro</p>
+                          </CardContent>
+                        </Card>
+                      </div>
+
+                      {Object.keys(analytics.cellStats).length > 0 && (
+                        <div>
+                          <h3 className="text-lg font-semibold mb-4">Estatísticas por Célula</h3>
+                          <div className="grid gap-4">
+                            {Object.entries(analytics.cellStats).map(([cellName, stats]) => (
+                              <Card key={cellName}>
+                                <CardContent className="p-4">
+                                  <h4 className="font-medium mb-2">{cellName}</h4>
+                                  <div className="grid grid-cols-4 gap-4 text-sm">
+                                    <div>
+                                      <div className="font-bold">{stats.pieces}</div>
+                                      <div className="text-muted-foreground">Peças</div>
+                                    </div>
+                                    <div>
+                                      <div className="font-bold">{stats.people}</div>
+                                      <div className="text-muted-foreground">Pessoas</div>
+                                    </div>
+                                    <div>
+                                      <div className="font-bold">{stats.entries}</div>
+                                      <div className="text-muted-foreground">Registros</div>
+                                    </div>
+                                    <div>
+                                      <div className="font-bold">{Math.round((stats.pieces / stats.entries) * 100) / 100}</div>
+                                      <div className="text-muted-foreground">Peças/Registro</div>
+                                    </div>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={resetForm}>
               <Plus className="h-4 w-4 mr-2" />
@@ -451,18 +629,40 @@ export default function SewingPieces() {
               </div>
             </form>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        </div>
       </div>
 
+      {(startDate || endDate) && (
+        <Card className="bg-muted/50">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Filter className="h-4 w-4" />
+                <span className="text-sm font-medium">Filtros aplicados:</span>
+                {startDate && <span className="text-sm">De: {new Date(startDate).toLocaleDateString("pt-BR")}</span>}
+                {endDate && <span className="text-sm">Até: {new Date(endDate).toLocaleDateString("pt-BR")}</span>}
+              </div>
+              <Button variant="outline" size="sm" onClick={clearFilters}>
+                <X className="h-4 w-4 mr-2" />
+                Limpar
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="grid gap-4">
-        {sewingPieces.length === 0 ? (
+        {(() => {
+          const filteredPieces = getFilteredSewingPieces();
+          return filteredPieces.length === 0 ? (
           <Card>
             <CardContent className="p-6">
               <p className="text-muted-foreground text-center">Nenhuma peça costurada encontrada.</p>
             </CardContent>
           </Card>
-        ) : (
-          sewingPieces.map((sewingPiece) => (
+          ) : (
+            filteredPieces.map((sewingPiece) => (
             <Card key={sewingPiece.id}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <div>
@@ -498,8 +698,9 @@ export default function SewingPieces() {
                 </div>
               </CardContent>
             </Card>
-          ))
-        )}
+            ))
+          );
+        })()}
       </div>
     </div>
   );
