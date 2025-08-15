@@ -3,8 +3,40 @@ import { collection, getDocs, query, where, orderBy, limit } from "firebase/fire
 import { db } from "@/lib/firebase";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Users, Package, AlertTriangle, TrendingUp, Printer, Scissors, Truck, Stamp, Factory } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Users, Package, AlertTriangle, TrendingUp, Printer, Scissors, Truck, Stamp, Factory, Clock, Target, BarChart3 } from "lucide-react";
 import { DeliveryCalendar } from "@/components/DeliveryCalendar";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+
+interface SewingPiece {
+  id: string;
+  date: string;
+  description: string;
+  cellId: string;
+  peopleCount: number;
+  products: {
+    productId: string;
+    productName: string;
+    quantity: number;
+  }[];
+}
+
+interface Cell {
+  id: string;
+  name: string;
+}
+
+interface SewingAnalytics {
+  totalPieces: number;
+  totalPeople: number;
+  totalEntries: number;
+  avgPiecesPerPerson: number;
+  avgPiecesPerEntry: number;
+  productivityTrend: { date: string; pieces: number; people: number }[];
+  cellStats: Record<string, { pieces: number; people: number; entries: number; avgPiecesPerEntry: number }>;
+  last7Days: { pieces: number; people: number; entries: number };
+  last30Days: { pieces: number; people: number; entries: number };
+}
 
 interface DashboardStats {
   totalEmployees: number;
@@ -49,7 +81,10 @@ export default function Dashboard() {
   });
   const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
   const [deliveryDates, setDeliveryDates] = useState<DeliveryDate[]>([]);
+  const [sewingAnalytics, setSewingAnalytics] = useState<SewingAnalytics | null>(null);
+  const [cells, setCells] = useState<Cell[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -62,14 +97,23 @@ export default function Dashboard() {
         const productsSnapshot = await getDocs(collection(db, 'products'));
         const totalProducts = productsSnapshot.size;
 
-        // Get cells count
+        // Get cells data
         const cellsSnapshot = await getDocs(collection(db, 'cells'));
         const totalCells = cellsSnapshot.size;
+        const cellsData = cellsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          name: doc.data().name || 'Célula sem nome',
+          ...doc.data()
+        })) as Cell[];
 
-        // Get sewing pieces data and calculate total quantity
+        // Get sewing pieces data and calculate detailed analytics
         const sewingSnapshot = await getDocs(collection(db, 'sewingPieces'));
-        const sewingData = sewingSnapshot.docs.map(doc => doc.data());
-        const totalSewingPieces = sewingData.reduce((total, piece) => {
+        const sewingPiecesData = sewingSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as SewingPiece[];
+
+        const totalSewingPieces = sewingPiecesData.reduce((total, piece) => {
           const pieceTotal = (piece.products || []).reduce((pieceSum: number, product: any) => 
             pieceSum + (product.quantity || 0), 0
           );
@@ -88,6 +132,9 @@ export default function Dashboard() {
           }, 0);
           return total + entryTotal;
         }, 0);
+
+        // Calculate detailed sewing analytics
+        const sewingAnalytics = calculateSewingAnalytics(sewingPiecesData, cellsData);
 
         // Get recent shippings (last 7 days)
         const recentDate = new Date();
@@ -206,6 +253,8 @@ export default function Dashboard() {
         
         setRecentActivities(activities);
         setDeliveryDates(deliveryDatesArray);
+        setSewingAnalytics(sewingAnalytics);
+        setCells(cellsData);
       } catch (error) {
         console.error("Error fetching stats:", error);
       } finally {
@@ -215,6 +264,85 @@ export default function Dashboard() {
 
     fetchStats();
   }, []);
+
+  const calculateSewingAnalytics = (sewingPieces: SewingPiece[], cells: Cell[]): SewingAnalytics => {
+    const totalPieces = sewingPieces.reduce((total, piece) => {
+      return total + (piece.products || []).reduce((sum, product) => sum + (product.quantity || 0), 0);
+    }, 0);
+
+    const totalPeople = sewingPieces.reduce((total, piece) => total + (piece.peopleCount || 0), 0);
+    const totalEntries = sewingPieces.length;
+
+    const avgPiecesPerPerson = totalPeople > 0 ? totalPieces / totalPeople : 0;
+    const avgPiecesPerEntry = totalEntries > 0 ? totalPieces / totalEntries : 0;
+
+    // Calculate last 7 and 30 days
+    const now = new Date();
+    const last7Days = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const last30Days = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    const recent7 = sewingPieces.filter(piece => new Date(piece.date) >= last7Days);
+    const recent30 = sewingPieces.filter(piece => new Date(piece.date) >= last30Days);
+
+    const last7DaysStats = {
+      pieces: recent7.reduce((total, piece) => 
+        total + (piece.products || []).reduce((sum, p) => sum + (p.quantity || 0), 0), 0),
+      people: recent7.reduce((total, piece) => total + (piece.peopleCount || 0), 0),
+      entries: recent7.length
+    };
+
+    const last30DaysStats = {
+      pieces: recent30.reduce((total, piece) => 
+        total + (piece.products || []).reduce((sum, p) => sum + (p.quantity || 0), 0), 0),
+      people: recent30.reduce((total, piece) => total + (piece.peopleCount || 0), 0),
+      entries: recent30.length
+    };
+
+    // Calculate cell statistics
+    const cellStats = cells.reduce((stats, cell) => {
+      const cellPieces = sewingPieces.filter(piece => piece.cellId === cell.id);
+      const cellTotalPieces = cellPieces.reduce((total, piece) =>
+        total + (piece.products || []).reduce((sum, p) => sum + (p.quantity || 0), 0), 0);
+      const cellTotalPeople = cellPieces.reduce((total, piece) => total + (piece.peopleCount || 0), 0);
+      const cellEntries = cellPieces.length;
+
+      stats[cell.name] = {
+        pieces: cellTotalPieces,
+        people: cellTotalPeople,
+        entries: cellEntries,
+        avgPiecesPerEntry: cellEntries > 0 ? cellTotalPieces / cellEntries : 0
+      };
+
+      return stats;
+    }, {} as Record<string, { pieces: number; people: number; entries: number; avgPiecesPerEntry: number }>);
+
+    // Calculate productivity trend (last 10 days)
+    const productivityTrend = [];
+    for (let i = 9; i >= 0; i--) {
+      const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+      const dateStr = date.toISOString().split('T')[0];
+      const dayPieces = sewingPieces.filter(piece => piece.date === dateStr);
+      
+      productivityTrend.push({
+        date: dateStr,
+        pieces: dayPieces.reduce((total, piece) => 
+          total + (piece.products || []).reduce((sum, p) => sum + (p.quantity || 0), 0), 0),
+        people: dayPieces.reduce((total, piece) => total + (piece.peopleCount || 0), 0)
+      });
+    }
+
+    return {
+      totalPieces,
+      totalPeople,
+      totalEntries,
+      avgPiecesPerPerson: Math.round(avgPiecesPerPerson * 100) / 100,
+      avgPiecesPerEntry: Math.round(avgPiecesPerEntry * 100) / 100,
+      productivityTrend,
+      cellStats,
+      last7Days: last7DaysStats,
+      last30Days: last30DaysStats
+    };
+  };
 
   const cards = [
     {
@@ -322,12 +450,200 @@ export default function Dashboard() {
             Visão geral do sistema de produção
           </p>
         </div>
-        <Badge variant="secondary" className="px-3 py-1">
-          <div className="flex items-center gap-1">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-            Sistema Online
-          </div>
-        </Badge>
+        <div className="flex items-center space-x-2">
+          {sewingAnalytics && (
+            <Dialog open={isAnalyticsOpen} onOpenChange={setIsAnalyticsOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <BarChart3 className="h-4 w-4 mr-2" />
+                  Análise Produtividade
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-6xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Análise de Produtividade - Peças Costuradas</DialogTitle>
+                </DialogHeader>
+                
+                <div className="space-y-6">
+                  {/* Métricas Principais */}
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                    <Card>
+                      <CardContent className="p-4 text-center">
+                        <div className="text-2xl font-bold text-blue-600">{sewingAnalytics.avgPiecesPerPerson}</div>
+                        <p className="text-sm text-muted-foreground">Peças/Pessoa</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4 text-center">
+                        <div className="text-2xl font-bold text-green-600">{sewingAnalytics.avgPiecesPerEntry}</div>
+                        <p className="text-sm text-muted-foreground">Peças/Registro</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4 text-center">
+                        <div className="text-2xl font-bold text-purple-600">{sewingAnalytics.last7Days.pieces}</div>
+                        <p className="text-sm text-muted-foreground">Peças (7 dias)</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4 text-center">
+                        <div className="text-2xl font-bold text-orange-600">{sewingAnalytics.last30Days.pieces}</div>
+                        <p className="text-sm text-muted-foreground">Peças (30 dias)</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4 text-center">
+                        <div className="text-2xl font-bold text-cyan-600">
+                          {sewingAnalytics.last7Days.entries > 0 
+                            ? Math.round((sewingAnalytics.last7Days.pieces / sewingAnalytics.last7Days.entries) * 100) / 100
+                            : 0}
+                        </div>
+                        <p className="text-sm text-muted-foreground">Média 7 dias</p>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Comparativo de Períodos */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg">Últimos 7 dias</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2">
+                          <div className="flex justify-between">
+                            <span>Peças produzidas:</span>
+                            <Badge variant="default">{sewingAnalytics.last7Days.pieces}</Badge>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Total de pessoas:</span>
+                            <Badge variant="secondary">{sewingAnalytics.last7Days.people}</Badge>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Registros:</span>
+                            <Badge variant="outline">{sewingAnalytics.last7Days.entries}</Badge>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Produtividade média:</span>
+                            <Badge variant="default">
+                              {sewingAnalytics.last7Days.people > 0 
+                                ? Math.round((sewingAnalytics.last7Days.pieces / sewingAnalytics.last7Days.people) * 100) / 100
+                                : 0} peças/pessoa
+                            </Badge>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg">Últimos 30 dias</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2">
+                          <div className="flex justify-between">
+                            <span>Peças produzidas:</span>
+                            <Badge variant="default">{sewingAnalytics.last30Days.pieces}</Badge>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Total de pessoas:</span>
+                            <Badge variant="secondary">{sewingAnalytics.last30Days.people}</Badge>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Registros:</span>
+                            <Badge variant="outline">{sewingAnalytics.last30Days.entries}</Badge>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Produtividade média:</span>
+                            <Badge variant="default">
+                              {sewingAnalytics.last30Days.people > 0 
+                                ? Math.round((sewingAnalytics.last30Days.pieces / sewingAnalytics.last30Days.people) * 100) / 100
+                                : 0} peças/pessoa
+                            </Badge>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Estatísticas por Célula */}
+                  {Object.keys(sewingAnalytics.cellStats).length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Performance por Célula de Produção</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid gap-4">
+                          {Object.entries(sewingAnalytics.cellStats).map(([cellName, stats]) => (
+                            <div key={cellName} className="border rounded-lg p-4">
+                              <h4 className="font-medium mb-3 text-lg">{cellName}</h4>
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div className="text-center">
+                                  <div className="text-xl font-bold text-blue-600">{stats.pieces}</div>
+                                  <div className="text-sm text-muted-foreground">Total Peças</div>
+                                </div>
+                                <div className="text-center">
+                                  <div className="text-xl font-bold text-green-600">{stats.people}</div>
+                                  <div className="text-sm text-muted-foreground">Total Pessoas</div>
+                                </div>
+                                <div className="text-center">
+                                  <div className="text-xl font-bold text-purple-600">{stats.entries}</div>
+                                  <div className="text-sm text-muted-foreground">Registros</div>
+                                </div>
+                                <div className="text-center">
+                                  <div className="text-xl font-bold text-orange-600">
+                                    {Math.round(stats.avgPiecesPerEntry * 100) / 100}
+                                  </div>
+                                  <div className="text-sm text-muted-foreground">Peças/Registro</div>
+                                </div>
+                              </div>
+                              <div className="mt-2 text-sm text-muted-foreground text-center">
+                                Produtividade: {stats.people > 0 ? Math.round((stats.pieces / stats.people) * 100) / 100 : 0} peças por pessoa
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Tendência dos Últimos 10 Dias */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Tendência de Produção (Últimos 10 dias)</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        {sewingAnalytics.productivityTrend.map((day, index) => (
+                          <div key={day.date} className="flex items-center justify-between p-2 border rounded">
+                            <span className="text-sm font-medium">
+                              {new Date(day.date).toLocaleDateString("pt-BR")}
+                            </span>
+                            <div className="flex space-x-4 text-sm">
+                              <span>Peças: <Badge variant="default">{day.pieces}</Badge></span>
+                              <span>Pessoas: <Badge variant="secondary">{day.people}</Badge></span>
+                              <span>
+                                Produtividade: <Badge variant="outline">
+                                  {day.people > 0 ? Math.round((day.pieces / day.people) * 100) / 100 : 0}
+                                </Badge>
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
+          <Badge variant="secondary" className="px-3 py-1">
+            <div className="flex items-center gap-1">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              Sistema Online
+            </div>
+          </Badge>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -371,6 +687,83 @@ export default function Dashboard() {
           </Card>
         ))}
       </div>
+
+      {/* Production Analytics Cards */}
+      {sewingAnalytics && (
+        <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
+          <Card className="hover:shadow-md transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Produtividade
+              </CardTitle>
+              <div className="p-2 rounded-lg bg-blue-50">
+                <Target className="h-4 w-4 text-blue-600" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{sewingAnalytics.avgPiecesPerPerson}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                peças por pessoa (geral)
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-md transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Eficiência
+              </CardTitle>
+              <div className="p-2 rounded-lg bg-green-50">
+                <TrendingUp className="h-4 w-4 text-green-600" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{sewingAnalytics.avgPiecesPerEntry}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                peças por registro
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-md transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Últimos 7 dias
+              </CardTitle>
+              <div className="p-2 rounded-lg bg-purple-50">
+                <Clock className="h-4 w-4 text-purple-600" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{sewingAnalytics.last7Days.pieces}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                peças produzidas
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-md transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Média Semanal
+              </CardTitle>
+              <div className="p-2 rounded-lg bg-orange-50">
+                <BarChart3 className="h-4 w-4 text-orange-600" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {sewingAnalytics.last7Days.people > 0 
+                  ? Math.round((sewingAnalytics.last7Days.pieces / sewingAnalytics.last7Days.people) * 100) / 100
+                  : 0}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                peças/pessoa (7 dias)
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Delivery Calendar */}
       <div className="grid gap-4 md:grid-cols-1">
